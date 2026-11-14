@@ -2,11 +2,11 @@
 
 @layer base {
   :root {
-    --font-serif: 'Cormorant Garamond', 'Cormorant Infant', 'Playfair Display', Georgia, serif;
+    --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
     --font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-    --font-script: 'Great Vibes', 'Alex Brush', 'Allura', 'Dancing Script', cursive;
+    --font-script: 'Great Vibes', 'Alex Brush', 'Dancing Script', cursive;
     --font-tall: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
-    --font-sans: 'Lora', 'Cormorant Infant', Georgia, serif;
+    --font-sans: 'Lora', 'Cormorant Garamond', Georgia, serif;
   }
 
   html {
@@ -69,7 +69,7 @@
 }
 
 .font-handwritten-minimal {
-  font-family: 'Alex Brush', 'Allura', 'Great Vibes', cursive;
+  font-family: 'Alex Brush', 'Great Vibes', cursive;
   font-weight: 400;
   line-height: 1.35;
 }
@@ -125,10 +125,12 @@
 
 .animate-spin-halo {
   animation: spin-halo 28s linear infinite;
+  will-change: transform;
 }
 
 .animate-spin-vinyl {
   animation: spin-halo 7s linear infinite;
+  will-change: transform;
 }
 
 /* Sóng nhạc Equalizer */

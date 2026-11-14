@@ -149,7 +149,7 @@ function getInitialGuestName(propName?: string): string {
   return '';
 }
 
-export const RsvpWishesSection: React.FC<RsvpWishesSectionProps> = ({
+export const RsvpWishesSection: React.FC<RsvpWishesSectionProps> = React.memo(({
   styleId,
   data,
   wishes,
@@ -642,6 +642,8 @@ export const RsvpWishesSection: React.FC<RsvpWishesSectionProps> = ({
                               <img
                                 src={card.info.qrImageUrl}
                                 alt={card.info.accountHolder}
+                                loading="lazy"
+                                decoding="async"
                                 className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                               />
                               <span className="absolute bottom-1.5 inset-x-2 text-center text-[10px] font-serif-italic text-stone-500 bg-white/90 rounded-full py-0.5">
@@ -758,6 +760,8 @@ export const RsvpWishesSection: React.FC<RsvpWishesSectionProps> = ({
           <img
             src={data.sectionImages.thankYouBg}
             alt="Thank you"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-[center_68%] opacity-95"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/20 to-black/55" />
@@ -775,4 +779,4 @@ export const RsvpWishesSection: React.FC<RsvpWishesSectionProps> = ({
       </section>
     </>
   );
-};
+});

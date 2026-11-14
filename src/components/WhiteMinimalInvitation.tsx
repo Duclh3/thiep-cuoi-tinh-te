@@ -21,6 +21,7 @@ import {
 import { WeddingData, WishItem } from '../data/weddingData';
 import { soundEngine } from '../utils/soundEngine';
 import { parseWishItem } from '../utils/wishHelper';
+import { preloadAndDecodeImages } from '../utils/imagePreloader';
 
 interface WhiteMinimalInvitationProps {
   data: WeddingData;
@@ -61,39 +62,41 @@ const MinimalCallaBouquetImg: React.FC<{
   className?: string;
   flipX?: boolean;
   flipY?: boolean;
-}> = ({ className = '', flipX = false, flipY = false }) => {
+}> = React.memo(({ className = '', flipX = false, flipY = false }) => {
   const scaleTransform = `${flipX ? 'scale-x-[-1]' : ''} ${flipY ? 'scale-y-[-1]' : ''}`.trim();
   return (
     <img
       src={assetUrl('/images/minimal-calla-bouquet.png')}
       alt="Hoa cưới trang trí"
+      decoding="async"
       draggable={false}
-      className={`pointer-events-none select-none object-contain drop-shadow-[0_0_2px_#ffffff] drop-shadow-[0_6px_14px_rgba(43,37,35,0.16)] ${scaleTransform} ${className}`}
+      className={`pointer-events-none select-none object-contain drop-shadow-[0_5px_12px_rgba(43,37,35,0.16)] ${scaleTransform} ${className}`}
     />
   );
-};
+});
 
 /**
  * Ảnh 2 Cành Hoa Rum Đỏ Rượu Dáng Dài Nằm Nghiêng Dưới Ảnh Cô Dâu (Giống hệt giây 00:13 trong video)
  */
-const DiagonalCallaStemsImg: React.FC<{ className?: string; flipX?: boolean }> = ({
+const DiagonalCallaStemsImg: React.FC<{ className?: string; flipX?: boolean }> = React.memo(({
   className = '',
   flipX = false,
 }) => (
   <img
     src={assetUrl('/images/minimal-calla-stems.png')}
     alt="Cành hoa Rum đỏ rượu"
+    decoding="async"
     draggable={false}
-    className={`pointer-events-none select-none object-contain drop-shadow-[0_0_2px_#ffffff] drop-shadow-[0_5px_12px_rgba(43,37,35,0.15)] ${
+    className={`pointer-events-none select-none object-contain drop-shadow-[0_5px_12px_rgba(43,37,35,0.15)] ${
       flipX ? 'scale-x-[-1]' : ''
     } ${className}`}
   />
-);
+));
 
 /**
  * Con dấu sáp đỏ rượu in nổi cánh bướm vàng 3D ở tâm phong bì
  */
-const MinimalButterflyWaxSeal: React.FC = () => (
+const MinimalButterflyWaxSeal: React.FC = React.memo(() => (
   <div
     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-[0_6px_16px_rgba(46,7,14,0.38)] select-none"
     style={{
@@ -103,7 +106,7 @@ const MinimalButterflyWaxSeal: React.FC = () => (
     }}
   >
     <div className="w-[82%] h-[82%] rounded-full border border-[#8E3B4B]/70 flex items-center justify-center">
-      <svg viewBox="0 0 64 64" className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]">
+      <svg viewBox="0 0 64 64" className="w-7 h-7 sm:w-8 sm:h-8">
         <defs>
           <linearGradient id="minGoldButterfly" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
             <stop stopColor="#FCE79C" />
@@ -113,13 +116,71 @@ const MinimalButterflyWaxSeal: React.FC = () => (
           </linearGradient>
         </defs>
         <path
+          d="M30 33C23 21 10 16 8 25C6 32 14 38 25 38C15 41 11 49 16 53C21 57 28 50 31 41L32 37L33 41C36 50 43 57 48 53C53 49 49 41 39 38C50 38 58 32 56 25C54 16 41 21 34 33L32 35L30 33Z"
+          fill="#000000"
+          fillOpacity="0.45"
+        />
+        <path
           d="M30 31C23 19 10 14 8 23C6 30 14 36 25 36C15 39 11 47 16 51C21 55 28 48 31 39L32 35L33 39C36 48 43 55 48 51C53 47 49 39 39 36C50 36 58 30 56 23C54 14 41 19 34 31L32 33L30 31Z"
           fill="url(#minGoldButterfly)"
         />
       </svg>
     </div>
   </div>
-);
+));
+
+/**
+ * Component con độc lập cho 4 ô đếm ngược để không re-render toàn trang mỗi giây
+ */
+const MinimalCountdownGrid: React.FC<{ isoDate: string }> = React.memo(({ isoDate }) => {
+  const compute = () => {
+    const target = new Date(isoDate).getTime();
+    const diff = Math.max(0, target - Date.now());
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(compute);
+
+  useEffect(() => {
+    setTimeLeft(compute());
+    const timer = setInterval(() => {
+      setTimeLeft(compute());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isoDate]);
+
+  return (
+    <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5 max-w-xs sm:max-w-md mx-auto relative z-10">
+      {[
+        { label: 'NGÀY', val: timeLeft.days },
+        { label: 'GIỜ', val: timeLeft.hours },
+        { label: 'PHÚT', val: timeLeft.minutes },
+        { label: 'GIÂY', val: timeLeft.seconds },
+      ].map((item, idx) => (
+        <motion.div
+          key={item.label}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.45, delay: idx * 0.08 }}
+          className="rounded-xl bg-[#F3ECE4] border border-[#E6DDD2] py-3 md:py-4 px-1.5 md:px-3 text-center shadow-sm"
+        >
+          <span className="block font-condensed-minimal text-lg sm:text-xl md:text-2xl font-normal text-[#2B2523] tabular-nums">
+            {String(item.val).padStart(2, '0')}
+          </span>
+          <span className="block font-condensed-minimal text-[10px] sm:text-xs tracking-[0.1em] uppercase text-[#6E625C] mt-0.5">
+            {item.label}
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  );
+});
 
 /**
  * Chiếc Nơ Lụa Vàng Kim 3D Nghệ Thuật đặt trên đỉnh Hộp Quà Mừng Cưới
@@ -201,27 +262,22 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
   // Trạng thái mở thiệp: Phải nhấp vào phong bì mới mở khóa toàn bộ nội dung thiệp bên dưới
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
 
-  // Đồng hồ đếm ngược tới ngày cưới 28/11/2026
-  const calculateTimeLeft = () => {
-    const target = new Date(data.weddingDate.isoDate).getTime();
-    const now = new Date().getTime();
-    const diff = Math.max(0, target - now);
-    return {
-      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / 1000 / 60) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    };
-  };
-
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
+  // Tải & giải mã ngầm các ảnh chính trong lúc đang ở màn hình phong bì đóng
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [data.weddingDate.isoDate]);
+    const urls = [
+      data.sectionImages.heroLeftFloat,
+      assetUrl('/images/minimal-calla-bouquet.png'),
+      assetUrl('/images/minimal-calla-stems.png'),
+      data.sectionImages.kissPhoto,
+      data.sectionImages.hero,
+      data.sectionImages.countdown,
+      data.groom.avatar,
+      data.bride.avatar,
+      data.sectionImages.thankYouBg,
+      ...data.album9Images.slice(0, 4).map((item) => item?.url),
+    ];
+    return preloadAndDecodeImages(urls, { delayMs: 420, concurrency: 2 });
+  }, [data]);
 
   // Form gửi lời chúc & xác nhận tham dự (tự động điền tên từ param link)
   const [guestInputName, setGuestInputName] = useState(() => getInitialGuestName(guestName));
@@ -400,7 +456,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
 
       {/* Khung Thiệp Dọc Chuẩn Mobile-First, Tối Ưu Hiển Thị Sang Trọng Cả Trên Màn Hình Máy Tính */}
       <div
-        className={`w-full max-w-[460px] md:max-w-3xl lg:max-w-4xl bg-[#FAF8F5] shadow-[0_0_60px_rgba(0,0,0,0.09)] md:shadow-[0_25px_80px_rgba(43,37,35,0.16)] md:rounded-3xl md:border md:border-[#E5DDD2] relative overflow-hidden transition-all duration-500 ${
+        className={`w-full max-w-[460px] md:max-w-3xl lg:max-w-4xl bg-[#FAF8F5] shadow-[0_0_60px_rgba(0,0,0,0.09)] md:shadow-[0_25px_80px_rgba(43,37,35,0.16)] md:rounded-3xl md:border md:border-[#E5DDD2] relative overflow-hidden ${
           isEnvelopeOpen ? 'pb-10' : 'min-h-[100dvh] md:min-h-[780px] flex flex-col justify-center'
         }`}
       >
@@ -645,7 +701,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                 <motion.p
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.3 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   className="font-handwritten-minimal text-3xl sm:text-4xl md:text-5xl text-center text-[#3A302C] mb-3"
                 >
                   Tháng 11 - 2026
@@ -721,7 +777,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: false, amount: 0.3 }}
+                    viewport={{ once: true, amount: 0.3 }}
                     className="mx-auto w-16 h-22 rounded-[50%] border border-stone-500 p-1 flex items-center justify-center mb-4"
                   >
                     <div className="w-full h-full rounded-[50%] border border-stone-400 flex flex-col items-center justify-center font-handwritten-minimal text-2xl text-[#3A302C] leading-none">
@@ -735,30 +791,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                   </p>
 
                   {/* 4 Ô Đếm Ngược Kem Mịn (NGÀY | GIỜ | PHÚT | GIÂY) */}
-                  <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5 max-w-xs sm:max-w-md mx-auto relative z-10">
-                    {[
-                      { label: 'NGÀY', val: timeLeft.days },
-                      { label: 'GIỜ', val: timeLeft.hours },
-                      { label: 'PHÚT', val: timeLeft.minutes },
-                      { label: 'GIÂY', val: timeLeft.seconds },
-                    ].map((item, idx) => (
-                      <motion.div
-                        key={item.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: false, amount: 0.3 }}
-                        transition={{ duration: 0.45, delay: idx * 0.08 }}
-                        className="rounded-xl bg-[#F3ECE4] border border-[#E6DDD2] py-3 md:py-4 px-1.5 md:px-3 text-center shadow-sm"
-                      >
-                        <span className="block font-condensed-minimal text-lg sm:text-xl md:text-2xl font-normal text-[#2B2523]">
-                          {String(item.val).padStart(2, '0')}
-                        </span>
-                        <span className="block font-condensed-minimal text-[10px] sm:text-xs tracking-[0.1em] uppercase text-[#6E625C] mt-0.5">
-                          {item.label}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
+                  <MinimalCountdownGrid isoDate={data.weddingDate.isoDate} />
                 </div>
               </section>
 
@@ -770,7 +803,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: 28 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.25 }}
+                  viewport={{ once: true, amount: 0.25 }}
                   transition={{ duration: 0.65 }}
                   className="relative mx-auto w-[78%] max-w-[295px] md:max-w-[340px] bg-white p-2.5 md:p-3 shadow-[0_14px_35px_rgba(0,0,0,0.08)] border border-stone-200/80 mb-10"
                 >
@@ -789,7 +822,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.3 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   className="font-condensed-minimal text-xs sm:text-sm md:text-base tracking-[0.08em] uppercase text-[#3A302C] leading-relaxed mb-8 max-w-xl mx-auto"
                 >
                   <p>TRÂN TRỌNG KÍNH MỜI BẠN</p>
@@ -802,7 +835,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                   <motion.div
                     initial={{ opacity: 0, x: -28, rotate: -3 }}
                     whileInView={{ opacity: 1, x: 0, rotate: -1.5 }}
-                    viewport={{ once: false, amount: 0.25 }}
+                    viewport={{ once: true, amount: 0.25 }}
                     transition={{ duration: 0.6 }}
                     className="bg-white p-2 md:p-3 pb-4 md:pb-6 shadow-[0_12px_28px_rgba(0,0,0,0.09)] border border-stone-200/80"
                   >
@@ -825,7 +858,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                   <motion.div
                     initial={{ opacity: 0, x: 28, rotate: 6 }}
                     whileInView={{ opacity: 1, x: 0, rotate: 3.5 }}
-                    viewport={{ once: false, amount: 0.25 }}
+                    viewport={{ once: true, amount: 0.25 }}
                     transition={{ duration: 0.6, delay: 0.08 }}
                     className="bg-white p-2 md:p-3 pb-4 md:pb-6 shadow-[0_12px_28px_rgba(0,0,0,0.09)] border border-stone-200/80 mt-2"
                   >
@@ -854,7 +887,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.3 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   className="grid grid-cols-2 gap-4 md:gap-12 pt-1 pb-4 font-condensed-minimal text-xs md:text-sm tracking-[0.06em] uppercase text-[#3A302C] max-w-xl mx-auto"
                 >
                   <div className="space-y-1">
@@ -880,7 +913,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                     key={ev.id}
                     initial={{ opacity: 0, y: 32 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, amount: 0.22 }}
+                    viewport={{ once: true, amount: 0.22 }}
                     transition={{ duration: 0.55, delay: idx * 0.05 }}
                     className="relative rounded-2xl bg-[#F4EFEA] border border-[#E5DDD3] px-5 py-6 text-center shadow-[0_10px_28px_rgba(43,37,35,0.06)] flex flex-col justify-between"
                   >
@@ -966,7 +999,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                           y: isRightCol ? 14 : 0,
                           scale: 1,
                         }}
-                        viewport={{ once: false, amount: 0.2 }}
+                        viewport={{ once: true, amount: 0.2 }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         onClick={() => setLightboxUrl(url)}
                         className="cursor-pointer overflow-hidden bg-white p-1 shadow-[0_8px_22px_rgba(0,0,0,0.08)] border border-stone-200/70"
@@ -1126,8 +1159,7 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
                         exit={{
                           opacity: 0,
                           scale: 1.06,
-                          filter: 'blur(4px)',
-                          transition: { duration: 0.35 },
+                          transition: { duration: 0.32 },
                         }}
                         className="relative flex flex-col items-center justify-center py-2 select-none"
                       >
@@ -1395,3 +1427,5 @@ export const WhiteMinimalInvitation: React.FC<WhiteMinimalInvitationProps> = ({
     </div>
   );
 };
+
+export default WhiteMinimalInvitation;

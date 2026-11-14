@@ -8,6 +8,19 @@ const wishesFilePath = path.resolve(__dirname, 'data/wishes.json')
 
 export default defineConfig(({ command }) => ({
   base: process.env.VERCEL ? '/' : command === 'build' ? '/thiep-cuoi-long-huyen/' : '/',
+  build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) return 'vendor-three'
+          if (id.includes('node_modules/gsap') || id.includes('node_modules/lenis')) return 'vendor-scroll'
+          if (id.includes('node_modules/framer-motion')) return 'vendor-motion'
+        },
+      },
+    },
+  },
   server: {
     watch: {
       // Ngăn Vite tự động reload lại trang khi lưu lời chúc vào thư mục data/

@@ -783,3 +783,5 @@ export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
     </AnimatePresence>
   );
 };
+
+export default AdminGuestModal;

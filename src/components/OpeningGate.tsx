@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Film, Crown, BookOpen, Lock } from 'lucide-react';
 import { StyleId, THEMES, WeddingData } from '../data/weddingData';
+import { preloadAndDecodeImages } from '../utils/imagePreloader';
 
 interface OpeningGateProps {
   isOpen: boolean;
@@ -77,6 +78,23 @@ export const OpeningGate: React.FC<OpeningGateProps> = ({
     return () => clearTimeout(t);
   }, [isOpen, styleId]);
 
+  // Tải & giải mã ngầm các ảnh chính của Style 1–4 trong lúc khách đang ngắm phong bì mở đầu
+  useEffect(() => {
+    if (isOpen) return;
+    const urls = [
+      data.sectionImages.hero,
+      data.sectionImages.heroLeftFloat,
+      data.sectionImages.heroRightFloat,
+      data.groom.avatar,
+      data.bride.avatar,
+      data.sectionImages.countdown,
+      data.sectionImages.loveStoryBg,
+      data.sectionImages.thankYouBg,
+      ...data.carousel3DImages.slice(0, 4).map((item) => item.url),
+    ];
+    return preloadAndDecodeImages(urls, { delayMs: 450, concurrency: 2 });
+  }, [isOpen, data]);
+
   const isFlapOpen = stage === 'preview';
 
   const getScreenBackground = () => {
@@ -102,9 +120,8 @@ export const OpeningGate: React.FC<OpeningGateProps> = ({
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
-            scale: 1.06,
-            filter: 'blur(8px)',
-            transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
+            scale: 1.05,
+            transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
           }}
           onClick={() => onUnlock()}
           className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden select-none cursor-pointer px-4 py-6 sm:py-8 transition-colors duration-700"

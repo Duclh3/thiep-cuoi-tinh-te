@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { WeddingData, WishItem } from '../data/weddingData';
 import { soundEngine } from '../utils/soundEngine';
+import { preloadAndDecodeImages } from '../utils/imagePreloader';
 import { AmbientCanvas } from './AmbientCanvas';
 import { CrochetLaceMirrorFrame } from './CrochetLaceMirrorFrame';
 import { LuxuryWeddingEnvelope } from './LuxuryWeddingEnvelope';
@@ -87,29 +88,26 @@ export const BurgundyCallaInvitation: React.FC<BurgundyCallaInvitationProps> = (
     if (initial) setGuestInputName(initial);
   }, [guestName]);
 
-  // Tối ưu hiệu năng: Tải ngầm toàn bộ ảnh chính ngay khi ở màn hình chờ mở phong bì
+  // Tối ưu hiệu năng: Tải & giải mã ngầm ảnh chính theo hàng đợi mượt mà khi đang ở màn hình phong bì
   useEffect(() => {
     const imagesToPreload = [
-      data.sectionImages.hero,
-      data.sectionImages.loveStoryBg,
-      ...(data.sectionImages.dressCodePhotos || [data.sectionImages.countdown]),
       data.sectionImages.envelopePolaroid,
       data.sectionImages.heroLeftFloat,
-      data.sectionImages.kissPhoto,
-      data.groom.avatar,
-      data.bride.avatar,
       decorAsset('burgundy-floral-tassel.png'),
       decorAsset('burgundy-calla-single.png'),
       decorAsset('burgundy-anthurium-main.png'),
       decorAsset('burgundy-floral-corner.png'),
+      data.sectionImages.hero,
+      data.sectionImages.loveStoryBg,
+      ...(data.sectionImages.dressCodePhotos || [data.sectionImages.countdown]),
+      data.sectionImages.kissPhoto,
+      data.groom.avatar,
+      data.bride.avatar,
+      data.sectionImages.thankYouBg,
+      ...data.album9Images.slice(0, 3).map((item) => item.url),
     ];
 
-    imagesToPreload.forEach((src) => {
-      if (!src) return;
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = src;
-    });
+    return preloadAndDecodeImages(imagesToPreload, { delayMs: 420, concurrency: 2 });
   }, [data]);
 
   const handleOpenEnvelope = () => {
@@ -225,7 +223,7 @@ export const BurgundyCallaInvitation: React.FC<BurgundyCallaInvitationProps> = (
     <div className="min-h-screen w-full bg-[#240811] text-[#331B23] flex justify-center items-start overflow-x-hidden md:py-8 md:px-6 relative">
       {/* NỀN LỤA ĐỎ BORDEAUX TRẦM SANG TRỌNG BÊN NGOÀI KHUNG THIỆP DESKTOP */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none"
+        className="hidden md:block fixed inset-0 z-0 pointer-events-none"
         style={{
           background:
             'radial-gradient(circle at 50% 30%, #3F101E 0%, #260710 60%, #170309 100%)',
@@ -269,7 +267,7 @@ export const BurgundyCallaInvitation: React.FC<BurgundyCallaInvitationProps> = (
       </div>
 
       {/* KHUNG THIỆP CƯỚI CHÍNH */}
-      <div className="w-full max-w-[450px] md:max-w-[480px] bg-[#FAF4F6] shadow-[0_25px_80px_rgba(0,0,0,0.6)] md:rounded-2xl relative z-10 overflow-hidden transition-all duration-500">
+      <div className="w-full max-w-[450px] md:max-w-[480px] bg-[#FAF4F6] shadow-[0_25px_80px_rgba(0,0,0,0.6)] md:rounded-2xl relative z-10 overflow-hidden">
         {/* Thanh Tiêu Đề Mảnh Ở Đỉnh Thiệp */}
         <div className="sticky top-0 z-40 bg-[#FAF4F6]/95 backdrop-blur-md border-b border-[#EAD7DF] px-4 py-3 flex items-center justify-center text-[#6A1427]">
           <span className="font-serif-luxury text-xs sm:text-sm tracking-[0.14em] uppercase font-semibold text-center">
@@ -1086,3 +1084,5 @@ export const BurgundyCallaInvitation: React.FC<BurgundyCallaInvitationProps> = (
     </div>
   );
 };
+
+export default BurgundyCallaInvitation;

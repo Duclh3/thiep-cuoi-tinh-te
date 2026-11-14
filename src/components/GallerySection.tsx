@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Expand, X, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { StyleId, THEMES, WeddingData } from '../data/weddingData';
 
@@ -9,11 +9,16 @@ interface GallerySectionProps {
   data: WeddingData;
 }
 
-export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data }) => {
-  const [rotationY, setRotationY] = useState(0);
-  // Luôn tự động xoay liên tục, chỉ dừng khi người dùng bấm trực tiếp vào nút Dừng
+export const GallerySection: React.FC<GallerySectionProps> = React.memo(({ styleId, data }) => {
+  // Chỉ dùng state cho trạng thái nút Bật/Tắt xoay (không cập nhật state 60fps!)
   const [autoRotate, setAutoRotate] = useState(true);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const carouselViewportRef = useRef<HTMLDivElement | null>(null);
+  const carouselTrackRef = useRef<HTMLDivElement | null>(null);
+  const angleRef = useRef(0);
+  const stepRemainingRef = useRef(0);
+  const isCarouselInView = useInView(carouselViewportRef, { margin: '260px 0px' });
 
   const theme = THEMES[styleId];
   const carouselCount = data.carousel3DImages.length;
@@ -36,17 +41,81 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
     setLightboxUrl(allGalleryUrls[nextIdx]);
   };
 
-  // Tốc độ xoay chậm rãi, êm dịu (~0.13 độ/frame)
+  // Vòng lặp xoay 3D trực tiếp trên GPU DOM (0 React re-render/frame) và tự nghỉ khi khuất tầm nhìn
   useEffect(() => {
-    if (!autoRotate) return;
-    let rafId: number;
-    const tick = () => {
-      setRotationY((prev) => prev - 0.13);
-      rafId = requestAnimationFrame(tick);
+    if (!isCarouselInView) return;
+
+    let rafId = 0;
+    let lastTs = performance.now();
+
+    const tick = (now: number) => {
+      const dt = Math.min(34, Math.max(0, now - lastTs));
+      lastTs = now;
+      const frameScale = dt / 16.667;
+
+      let changed = false;
+      if (autoRotate) {
+        angleRef.current -= 0.13 * frameScale;
+        changed = true;
+      }
+
+      if (Math.abs(stepRemainingRef.current) > 0.05) {
+        const stepDelta = stepRemainingRef.current * Math.min(1, 0.18 * frameScale);
+        angleRef.current += stepDelta;
+        stepRemainingRef.current -= stepDelta;
+        changed = true;
+      } else if (stepRemainingRef.current !== 0) {
+        angleRef.current += stepRemainingRef.current;
+        stepRemainingRef.current = 0;
+        changed = true;
+      }
+
+      if (changed && carouselTrackRef.current) {
+        carouselTrackRef.current.style.transform = `rotateX(-3deg) rotateY(${angleRef.current.toFixed(2)}deg)`;
+      }
+
+      if (autoRotate || stepRemainingRef.current !== 0) {
+        rafId = requestAnimationFrame(tick);
+      }
     };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [autoRotate]);
+
+    if (autoRotate || stepRemainingRef.current !== 0) {
+      rafId = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [autoRotate, isCarouselInView]);
+
+  const handleManualStep = (deltaDeg: number) => {
+    if (!autoRotate && carouselTrackRef.current) {
+      // Nếu đang tạm dừng xoay tự động, khởi chạy tween mượt trực tiếp trên DOM
+      stepRemainingRef.current += deltaDeg;
+      let rafId = 0;
+      const animateStep = () => {
+        if (Math.abs(stepRemainingRef.current) > 0.08) {
+          const step = stepRemainingRef.current * 0.2;
+          angleRef.current += step;
+          stepRemainingRef.current -= step;
+          if (carouselTrackRef.current) {
+            carouselTrackRef.current.style.transform = `rotateX(-3deg) rotateY(${angleRef.current.toFixed(2)}deg)`;
+          }
+          rafId = requestAnimationFrame(animateStep);
+        } else {
+          angleRef.current += stepRemainingRef.current;
+          stepRemainingRef.current = 0;
+          if (carouselTrackRef.current) {
+            carouselTrackRef.current.style.transform = `rotateX(-3deg) rotateY(${angleRef.current.toFixed(2)}deg)`;
+          }
+          cancelAnimationFrame(rafId);
+        }
+      };
+      rafId = requestAnimationFrame(animateStep);
+    } else {
+      stepRemainingRef.current += deltaDeg;
+    }
+  };
 
   return (
     <section
@@ -57,15 +126,16 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* TẦNG 1: VÒNG XOAY KHÔNG GIAN 3D */}
-        <div className="flex flex-col items-center">
+        <div ref={carouselViewportRef} className="flex flex-col items-center">
           <div
             className="relative h-[320px] sm:h-[390px] w-full flex items-center justify-center select-none overflow-visible"
             style={{ perspective: '1300px' }}
           >
             <div
-              className="relative w-44 sm:w-56 h-60 sm:h-74 preserve-3d"
+              ref={carouselTrackRef}
+              className="relative w-44 sm:w-56 h-60 sm:h-74 preserve-3d will-change-transform"
               style={{
-                transform: `rotateX(-3deg) rotateY(${rotationY}deg)`,
+                transform: 'rotateX(-3deg) rotateY(0deg)',
               }}
             >
               {data.carousel3DImages.map((img, i) => {
@@ -76,8 +146,9 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                     onClick={() => setLightboxUrl(img.url)}
                     style={{
                       transform: `rotateY(${angle}deg) translateZ(var(--carousel-z, 240px))`,
+                      backfaceVisibility: 'visible',
                     }}
-                    className={`cursor-pointer absolute inset-0 p-2 pb-7 shadow-[0_20px_45px_rgba(0,0,0,0.4)] group [--carousel-z:205px] sm:[--carousel-z:310px] ${
+                    className={`cursor-pointer absolute inset-0 p-2 pb-7 shadow-[0_18px_38px_rgba(0,0,0,0.38)] group [--carousel-z:205px] sm:[--carousel-z:310px] ${
                       styleId === 'editorial'
                         ? 'bg-stone-950 text-white border-2 border-[#C5A059] rounded-none'
                         : styleId === 'cinematic'
@@ -91,6 +162,8 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                       <img
                         src={img.url}
                         alt={img.caption}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover object-[center_22%] group-hover:scale-108 transition-transform duration-500"
                       />
                     </div>
@@ -107,7 +180,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
           <div className="mt-10 sm:mt-14 flex items-center justify-center gap-3 z-20">
             <button
               type="button"
-              onClick={() => setRotationY((prev) => prev + 45)}
+              onClick={() => handleManualStep(45)}
               className={`cursor-pointer w-9 h-9 rounded-full border ${theme.borderAccent} ${theme.bgCard} flex items-center justify-center shadow-md hover:scale-105 transition-transform`}
               aria-label="Xoay sang trái"
             >
@@ -134,7 +207,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
 
             <button
               type="button"
-              onClick={() => setRotationY((prev) => prev - 45)}
+              onClick={() => handleManualStep(-45)}
               className={`cursor-pointer w-9 h-9 rounded-full border ${theme.borderAccent} ${theme.bgCard} flex items-center justify-center shadow-md hover:scale-105 transition-transform`}
               aria-label="Xoay sang phải"
             >
@@ -192,16 +265,16 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                     scale: 1.03,
                     transition: { duration: 0.3 },
                   }}
-                  viewport={{ once: false, amount: 0.18 }}
+                  viewport={{ once: true, amount: 0.14 }}
                   transition={{
                     type: 'spring',
                     stiffness: 95,
                     damping: 16,
                     mass: 0.85,
-                    delay: col * 0.09,
+                    delay: col * 0.08,
                   }}
                   onClick={() => setLightboxUrl(item.url)}
-                  className={`cursor-pointer group relative overflow-hidden ${
+                  className={`cursor-pointer group relative overflow-hidden will-change-transform ${
                     styleId === 'editorial'
                       ? 'bg-white text-stone-950 rounded-none p-3 pb-5 border-2 border-stone-950 shadow-[12px_12px_0px_#C5A059]'
                       : styleId === 'cinematic'
@@ -237,32 +310,33 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                     </div>
                   )}
 
-                  {/* Khung chứa ảnh kèm hiệu ứng ống kính Zoom-Out & Vệt sáng lụa vàng quét ngang */}
+                  {/* Khung chứa ảnh kèm hiệu ứng ống kính Zoom-Out GPU mượt & Vệt sáng lụa vàng quét ngang */}
                   <div className="relative aspect-[4/4.6] rounded-[3px] overflow-hidden bg-stone-900">
                     <motion.img
-                      initial={{ scale: 1.22, filter: 'blur(4px)' }}
-                      whileInView={{ scale: 1, filter: 'blur(0px)' }}
-                      viewport={{ once: false, amount: 0.18 }}
-                      transition={{ duration: 0.85, delay: col * 0.09, ease: [0.22, 1, 0.36, 1] }}
+                      initial={{ scale: 1.18 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true, amount: 0.14 }}
+                      transition={{ duration: 0.85, delay: col * 0.08, ease: [0.22, 1, 0.36, 1] }}
                       src={item.url}
                       alt={item.alt}
                       loading="lazy"
-                      className="w-full h-full object-cover object-[center_22%] transition-transform duration-700 ease-out group-hover:scale-108"
+                      decoding="async"
+                      className="w-full h-full object-cover object-[center_22%] transition-transform duration-700 ease-out group-hover:scale-108 will-change-transform"
                     />
 
                     {/* Vệt ánh sáng lụa vàng quét chéo qua bức ảnh khi xuất hiện */}
                     <motion.div
                       initial={{ x: '-130%', skewX: -25 }}
                       whileInView={{ x: '160%', skewX: -25 }}
-                      viewport={{ once: false, amount: 0.2 }}
-                      transition={{ duration: 1.05, delay: 0.15 + col * 0.1, ease: 'easeInOut' }}
-                      className="pointer-events-none absolute inset-0 w-2/3 bg-gradient-to-r from-transparent via-white/45 to-transparent z-10"
+                      viewport={{ once: true, amount: 0.18 }}
+                      transition={{ duration: 1.05, delay: 0.14 + col * 0.09, ease: 'easeInOut' }}
+                      className="pointer-events-none absolute inset-0 w-2/3 bg-gradient-to-r from-transparent via-white/45 to-transparent z-10 will-change-transform"
                     />
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-30 group-hover:opacity-75 transition-opacity" />
 
                     {/* Nút phóng to */}
-                    <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                    <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/55 text-white flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
                       <Expand className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -302,7 +376,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] w-screen h-[100dvh] bg-black/92 backdrop-blur-xl flex flex-col items-center justify-center p-4 select-none"
+                className="fixed inset-0 z-[100] w-screen h-[100dvh] bg-black/92 backdrop-blur-md flex flex-col items-center justify-center p-4 select-none"
                 onClick={() => setLightboxUrl(null)}
               >
                 {/* Thanh đỉnh: Số thứ tự ảnh & Nút Đóng nổi bật */}
@@ -340,6 +414,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                     transition={{ duration: 0.25 }}
                     src={lightboxUrl}
                     alt="Ảnh cưới phóng to"
+                    decoding="async"
                     className="max-h-[75dvh] max-w-[90vw] rounded-xl object-contain shadow-[0_25px_70px_rgba(0,0,0,0.85)] border-2 border-white/90"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -353,10 +428,6 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
-
-                <p className="mt-3 text-[11px] text-white/70 tracking-wider">
-                  Chạm vào nền tối hoặc nút Đóng để quay lại thiệp
-                </p>
               </motion.div>
             )}
           </AnimatePresence>,
@@ -364,4 +435,4 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ styleId, data })
         )}
     </section>
   );
-};
+});

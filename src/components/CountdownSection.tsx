@@ -12,17 +12,13 @@ interface CountdownSectionProps {
   data: WeddingData;
 }
 
-export const CountdownSection: React.FC<CountdownSectionProps> = ({ styleId, data }) => {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const leftBlockRef = useRef<HTMLDivElement | null>(null);
-  const rightCalendarRef = useRef<HTMLDivElement | null>(null);
-  const theme = THEMES[styleId];
-
-  const calculateTimeLeft = () => {
-    const target = new Date(data.weddingDate.isoDate).getTime();
-    const now = new Date().getTime();
-    const diff = Math.max(0, target - now);
-
+/**
+ * Component con độc lập hiển thị 4 ô đếm ngược 3D Flip để tránh re-render toàn bộ lịch & section mỗi giây
+ */
+const CountdownFlipGrid: React.FC<{ isoDate: string }> = React.memo(({ isoDate }) => {
+  const compute = () => {
+    const target = new Date(isoDate).getTime();
+    const diff = Math.max(0, target - Date.now());
     return {
       days: Math.floor(diff / (1000 * 60 * 60 * 24)),
       hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
@@ -31,14 +27,54 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ styleId, dat
     };
   };
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const [timeLeft, setTimeLeft] = useState(compute);
 
   useEffect(() => {
+    setTimeLeft(compute());
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(compute());
     }, 1000);
     return () => clearInterval(timer);
-  }, [data.weddingDate.isoDate]);
+  }, [isoDate]);
+
+  return (
+    <div className="grid grid-cols-4 gap-2 sm:gap-4">
+      {[
+        { label: 'Ngày', value: timeLeft.days },
+        { label: 'Giờ', value: timeLeft.hours },
+        { label: 'Phút', value: timeLeft.minutes },
+        { label: 'Giây', value: timeLeft.seconds },
+      ].map((item, idx) => (
+        <div
+          key={idx}
+          className="rounded-2xl bg-white/15 backdrop-blur-md sm:backdrop-blur-xl border border-white/35 py-3 sm:py-5 px-1.5 sm:px-2 text-center shadow-lg"
+        >
+          <AnimatePresence mode="popLayout">
+            <motion.span
+              key={item.value}
+              initial={{ y: -12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 12, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="block font-serif-luxury text-2xl sm:text-5xl font-bold leading-none tabular-nums"
+            >
+              {String(item.value).padStart(2, '0')}
+            </motion.span>
+          </AnimatePresence>
+          <span className="block text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-amber-200 mt-1.5 whitespace-nowrap">
+            {item.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+export const CountdownSection: React.FC<CountdownSectionProps> = React.memo(({ styleId, data }) => {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const leftBlockRef = useRef<HTMLDivElement | null>(null);
+  const rightCalendarRef = useRef<HTMLDivElement | null>(null);
+  const theme = THEMES[styleId];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -114,6 +150,8 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ styleId, dat
               <img
                 src={data.sectionImages.countdown}
                 alt="Save the Date"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-[center_26%]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20" />
@@ -134,35 +172,7 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ styleId, dat
                   </h2>
 
                   {/* 4 Ô Đếm Ngược Kính Mờ 3D Flip */}
-                  <div className="grid grid-cols-4 gap-2 sm:gap-4">
-                    {[
-                      { label: 'Ngày', value: timeLeft.days },
-                      { label: 'Giờ', value: timeLeft.hours },
-                      { label: 'Phút', value: timeLeft.minutes },
-                      { label: 'Giây', value: timeLeft.seconds },
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-2xl bg-white/15 backdrop-blur-xl border border-white/35 py-3 sm:py-5 px-1.5 sm:px-2 text-center shadow-lg"
-                      >
-                        <AnimatePresence mode="popLayout">
-                          <motion.span
-                            key={item.value}
-                            initial={{ y: -12, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 12, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
-                            className="block font-serif-luxury text-2xl sm:text-5xl font-bold leading-none"
-                          >
-                            {String(item.value).padStart(2, '0')}
-                          </motion.span>
-                        </AnimatePresence>
-                        <span className="block text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-amber-200 mt-1.5 whitespace-nowrap">
-                          {item.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <CountdownFlipGrid isoDate={data.weddingDate.isoDate} />
                 </div>
               </div>
             </div>
@@ -282,4 +292,4 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ styleId, dat
       </div>
     </section>
   );
-};
+});

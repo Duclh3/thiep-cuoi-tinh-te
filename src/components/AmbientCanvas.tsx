@@ -30,6 +30,7 @@ interface AmbientParticle {
   color: string;
   secondaryColor?: string;
   alpha: number;
+  sprite: HTMLCanvasElement;
 }
 
 interface ShootingStar {
@@ -56,6 +57,7 @@ interface FireworkSpark {
   size: number;
   shape: 'circle' | 'heart' | 'star' | 'trail';
   gravity: number;
+  sprite?: HTMLCanvasElement;
 }
 
 interface CenterSymbolFlash {
@@ -63,13 +65,229 @@ interface CenterSymbolFlash {
   y: number;
   alpha: number;
   scale: number;
-  text: string;
-  color: string;
+  sprite: HTMLCanvasElement;
 }
 
 declare global {
   interface Window {
     triggerWeddingFireworks?: (count?: number) => void;
+  }
+}
+
+// ============================================================================
+// BỘ NHỚ ĐỆM OFFSCREEN SPRITE TOÀN CỤC (LOẠI BỎ 100% RUNTIME SHADOWBLUR TRONG 60FPS)
+// Vẽ sẵn hào quang Gaussian Blur & đường cong Bezier 1 lần duy nhất lên GPU Bitmap
+// ============================================================================
+const spriteCache = new Map<string, HTMLCanvasElement>();
+
+function getOrCreateSprite(
+  key: string,
+  pixelSize: number,
+  drawer: (sctx: CanvasRenderingContext2D, half: number, size: number) => void
+): HTMLCanvasElement {
+  const cached = spriteCache.get(key);
+  if (cached) return cached;
+
+  const off = document.createElement('canvas');
+  off.width = pixelSize;
+  off.height = pixelSize;
+  const sctx = off.getContext('2d');
+  if (sctx) {
+    drawer(sctx, pixelSize / 2, pixelSize);
+  }
+  spriteCache.set(key, off);
+  return off;
+}
+
+function getHeartSprite(color: string, withGlow: boolean): HTMLCanvasElement {
+  return getOrCreateSprite(`heart:${color}:${withGlow ? 1 : 0}`, 72, (sctx, half) => {
+    const unit = 22;
+    sctx.translate(half, half - unit * 0.5);
+    sctx.fillStyle = color;
+    if (withGlow) {
+      sctx.shadowColor = color;
+      sctx.shadowBlur = 12;
+    }
+    const topCurve = unit * 0.3;
+    sctx.beginPath();
+    sctx.moveTo(0, topCurve);
+    sctx.bezierCurveTo(0, 0, -unit / 2, 0, -unit / 2, topCurve);
+    sctx.bezierCurveTo(
+      -unit / 2,
+      (unit + topCurve) / 2,
+      0,
+      (unit + topCurve) / 1.4,
+      0,
+      unit
+    );
+    sctx.bezierCurveTo(
+      0,
+      (unit + topCurve) / 1.4,
+      unit / 2,
+      (unit + topCurve) / 2,
+      unit / 2,
+      topCurve
+    );
+    sctx.bezierCurveTo(unit / 2, 0, 0, 0, 0, topCurve);
+    sctx.closePath();
+    sctx.fill();
+  });
+}
+
+function getStarSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`star:${color}`, 80, (sctx, half) => {
+    const r = 18;
+    sctx.translate(half, half);
+    sctx.fillStyle = color;
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 14;
+    sctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      sctx.lineTo(Math.cos((i * Math.PI) / 2) * r, Math.sin((i * Math.PI) / 2) * r);
+      sctx.lineTo(
+        Math.cos(((i + 0.5) * Math.PI) / 2) * (r * 0.28),
+        Math.sin(((i + 0.5) * Math.PI) / 2) * (r * 0.28)
+      );
+    }
+    sctx.closePath();
+    sctx.fill();
+  });
+}
+
+function getGlowDotSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`dot:${color}`, 64, (sctx, half) => {
+    sctx.fillStyle = color;
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 14;
+    sctx.beginPath();
+    sctx.arc(half, half, 10, 0, Math.PI * 2);
+    sctx.fill();
+  });
+}
+
+function getPetalSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`petal:${color}`, 72, (sctx, half) => {
+    const u = 16;
+    sctx.translate(half, half - u * 0.45);
+    sctx.fillStyle = color;
+    sctx.beginPath();
+    sctx.moveTo(0, 0);
+    sctx.bezierCurveTo(u, -u * 0.9, u * 1.5, u * 0.5, 0, u * 1.45);
+    sctx.bezierCurveTo(-u * 1.5, u * 0.5, -u, -u * 0.9, 0, 0);
+    sctx.fill();
+  });
+}
+
+function getButterflySprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`butterfly:${color}`, 84, (sctx, half) => {
+    const u = 18;
+    sctx.translate(half, half);
+    sctx.fillStyle = color;
+    sctx.shadowColor = '#FFD700';
+    sctx.shadowBlur = 12;
+    sctx.beginPath();
+    sctx.ellipse(-u * 0.45, 0, u * 0.55, u * 0.35, -0.3, 0, Math.PI * 2);
+    sctx.ellipse(u * 0.45, 0, u * 0.55, u * 0.35, 0.3, 0, Math.PI * 2);
+    sctx.fill();
+  });
+}
+
+function getBubbleSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`bubble:${color}`, 56, (sctx, half) => {
+    const u = 18;
+    sctx.strokeStyle = color;
+    sctx.lineWidth = 2.2;
+    sctx.beginPath();
+    sctx.arc(half, half, u, 0, Math.PI * 2);
+    sctx.stroke();
+    sctx.fillStyle = 'rgba(255,255,255,0.48)';
+    sctx.beginPath();
+    sctx.arc(half - u * 0.3, half - u * 0.3, u * 0.25, 0, Math.PI * 2);
+    sctx.fill();
+  });
+}
+
+function getGoldFoilSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`foil:${color}`, 40, (sctx, half) => {
+    const u = 22;
+    sctx.fillStyle = color;
+    sctx.fillRect(half - u / 2, half - (u * 0.7) / 2, u, u * 0.7);
+  });
+}
+
+function getLanternSprite(): HTMLCanvasElement {
+  return getOrCreateSprite('lantern:hoian', 96, (sctx, half) => {
+    const u = 20;
+    sctx.translate(half, half);
+    sctx.shadowColor = '#FF9F1C';
+    sctx.shadowBlur = 20;
+    const grad = sctx.createRadialGradient(0, u * 0.2, 1, 0, 0, u);
+    grad.addColorStop(0, '#FFF3B0');
+    grad.addColorStop(0.5, '#FF9F1C');
+    grad.addColorStop(1, '#E71D36');
+    sctx.fillStyle = grad;
+    sctx.beginPath();
+    sctx.roundRect(-u * 0.42, -u * 0.55, u * 0.84, u * 1.1, [
+      u * 0.3,
+      u * 0.3,
+      u * 0.1,
+      u * 0.1,
+    ]);
+    sctx.fill();
+  });
+}
+
+function getApricotSprite(color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`apricot:${color}`, 64, (sctx, half) => {
+    const u = 18;
+    sctx.translate(half, half);
+    sctx.fillStyle = color;
+    for (let k = 0; k < 5; k++) {
+      sctx.rotate((Math.PI * 2) / 5);
+      sctx.beginPath();
+      sctx.arc(0, -u * 0.55, u * 0.36, 0, Math.PI * 2);
+      sctx.fill();
+    }
+    sctx.fillStyle = '#B91C1C';
+    sctx.beginPath();
+    sctx.arc(0, 0, u * 0.2, 0, Math.PI * 2);
+    sctx.fill();
+  });
+}
+
+function getSymbolFlashSprite(text: string, color: string): HTMLCanvasElement {
+  return getOrCreateSprite(`sym:${text}:${color}`, 96, (sctx, half) => {
+    sctx.translate(half, half);
+    sctx.fillStyle = color;
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 16;
+    sctx.font = 'bold 34px "Cormorant Garamond", serif';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    sctx.fillText(text, 0, 0);
+  });
+}
+
+function getSpriteForParticleKind(kind: AmbientParticleKind, color: string): HTMLCanvasElement {
+  switch (kind) {
+    case 'heart':
+      return getHeartSprite(color, false);
+    case 'petal':
+      return getPetalSprite(color);
+    case 'butterfly':
+      return getButterflySprite(color);
+    case 'diamond-star':
+      return getStarSprite(color);
+    case 'champagne-bubble':
+      return getBubbleSprite(color);
+    case 'gold-foil':
+      return getGoldFoilSprite(color);
+    case 'firefly':
+      return getGlowDotSprite(color);
+    case 'lantern':
+      return getLanternSprite();
+    case 'apricot-blossom':
+      return getApricotSprite(color);
   }
 }
 
@@ -79,23 +297,31 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let animationFrameId = 0;
+    let isTabHidden = document.hidden;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-    const handleResize = () => {
+    const syncCanvasSize = () => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
     };
 
-    window.addEventListener('resize', handleResize);
+    syncCanvasSize();
+    window.addEventListener('resize', syncCanvasSize, { passive: true });
 
     // ============================================================================
-    // 1. KHỞI TẠO HẠT MÔI TRƯỜNG ĐẶC TRƯNG RIÊNG CHO TỪNG PHONG CÁCH (4 STYLES)
+    // 1. KHỞI TẠO HẠT MÔI TRƯỜNG ĐẶC TRƯNG RIÊNG CHO TỪNG PHONG CÁCH (GIỮ NGUYÊN 100%)
     // ============================================================================
     const particles: AmbientParticle[] = [];
     const shootingStars: ShootingStar[] = [];
@@ -106,10 +332,15 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
 
     for (let i = 0; i < count; i++) {
       if (styleId === 'fairytale') {
-        // Phong cách 01 (Fine Art): Cánh hoa đào + Bướm vàng vỗ cánh + Bụi sao
         const rand = i % 6;
         const kind: AmbientParticleKind =
           rand === 0 ? 'butterfly' : rand % 2 === 0 ? 'diamond-star' : 'petal';
+        const color =
+          kind === 'butterfly'
+            ? '#D4AF37'
+            : i % 3 === 0
+            ? 'rgba(225, 95, 125, 0.78)'
+            : 'rgba(248, 175, 192, 0.82)';
         particles.push({
           kind,
           x: Math.random() * width,
@@ -121,19 +352,15 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: (Math.random() - 0.5) * 0.018,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: kind === 'butterfly' ? 0.14 : 0.035,
-          color:
-            kind === 'butterfly'
-              ? '#D4AF37'
-              : i % 3 === 0
-              ? 'rgba(225, 95, 125, 0.78)'
-              : 'rgba(248, 175, 192, 0.82)',
+          color,
           secondaryColor: '#FFF0F5',
           alpha: 0.85,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       } else if (styleId === 'editorial') {
-        // Phong cách 02 (Tạp Chí Vogue): Lá vàng 24K + Bọt Sâm panh bay lên + Ánh kim cương 4 cạnh
         const kind: AmbientParticleKind =
           i % 3 === 0 ? 'diamond-star' : i % 2 === 0 ? 'champagne-bubble' : 'gold-foil';
+        const color = i % 2 === 0 ? '#D4AF37' : '#F5E1A4';
         particles.push({
           kind,
           x: Math.random() * width,
@@ -145,14 +372,16 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: (Math.random() - 0.5) * 0.02,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: 0.045,
-          color: i % 2 === 0 ? '#D4AF37' : '#F5E1A4',
+          color,
           secondaryColor: '#FFFFFF',
           alpha: Math.random() * 0.55 + 0.35,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       } else if (styleId === 'cinematic') {
-        // Phong cách 03 (Đêm Pháo Hoa 3D): Đom đóm phát quang đêm sao + Bụi thiên hà
+        const kind: AmbientParticleKind = i % 4 === 0 ? 'diamond-star' : 'firefly';
+        const color = i % 2 === 0 ? '#FFD166' : '#FF9E64';
         particles.push({
-          kind: i % 4 === 0 ? 'diamond-star' : 'firefly',
+          kind,
           x: Math.random() * width,
           y: Math.random() * height,
           size: Math.random() * 3.5 + 2,
@@ -162,13 +391,19 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: 0.01,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: Math.random() * 0.06 + 0.02,
-          color: i % 2 === 0 ? '#FFD166' : '#FF9E64',
+          color,
           alpha: 0.8,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       } else if (styleId === 'garden') {
-        // Phong cách 06 (Khu Vườn Xanh Ngọc): Cánh hoa hồng trắng rơi + Trái tim kem phấn bay nhẹ + Đốm sáng ngọc
         const mod = i % 5;
         const kind: AmbientParticleKind = mod === 0 ? 'diamond-star' : mod === 1 ? 'heart' : 'petal';
+        const color =
+          kind === 'heart'
+            ? 'rgba(244, 182, 198, 0.55)'
+            : i % 2 === 0
+            ? 'rgba(255, 255, 255, 0.78)'
+            : 'rgba(222, 242, 227, 0.72)';
         particles.push({
           kind,
           x: Math.random() * width,
@@ -185,19 +420,20 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: (Math.random() - 0.5) * 0.02,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: 0.035,
-          color:
-            kind === 'heart'
-              ? 'rgba(244, 182, 198, 0.55)'
-              : i % 2 === 0
-              ? 'rgba(255, 255, 255, 0.78)'
-              : 'rgba(222, 242, 227, 0.72)',
+          color,
           secondaryColor: '#C8E6C9',
           alpha: kind === 'heart' ? 0.58 : 0.78,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       } else if (styleId === 'calla') {
-        // Phong cách 07 (Calla Đỏ Bordeaux): Cánh hoa rơi + Trái tim hồng phấn trong trẻo + Ánh sao vàng kim
         const mod = i % 5;
         const kind: AmbientParticleKind = mod === 0 ? 'diamond-star' : mod === 1 ? 'heart' : 'petal';
+        const color =
+          kind === 'heart'
+            ? 'rgba(232, 140, 165, 0.52)'
+            : i % 2 === 0
+            ? 'rgba(214, 112, 138, 0.58)'
+            : 'rgba(246, 205, 216, 0.68)';
         particles.push({
           kind,
           x: Math.random() * width,
@@ -214,20 +450,17 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: (Math.random() - 0.5) * 0.025,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: 0.04,
-          color:
-            kind === 'heart'
-              ? 'rgba(232, 140, 165, 0.52)'
-              : i % 2 === 0
-              ? 'rgba(214, 112, 138, 0.58)'
-              : 'rgba(246, 205, 216, 0.68)',
+          color,
           secondaryColor: '#D4AF37',
           alpha: kind === 'heart' ? 0.55 : 0.72,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       } else {
-        // Phong cách 04 (Đông Dương Cung Đình): Đèn lồng Hội An bay lên trời + Hoa mai vàng 5 cánh
         const isLantern = i % 3 === 0;
+        const kind: AmbientParticleKind = isLantern ? 'lantern' : 'apricot-blossom';
+        const color = isLantern ? '#FF6B35' : '#F7CE68';
         particles.push({
-          kind: isLantern ? 'lantern' : 'apricot-blossom',
+          kind,
           x: Math.random() * width,
           y: Math.random() * height,
           size: isLantern ? Math.random() * 7 + 10 : Math.random() * 5 + 5.5,
@@ -237,26 +470,28 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           spin: (Math.random() - 0.5) * 0.02,
           phase: Math.random() * Math.PI * 2,
           phaseSpeed: 0.035,
-          color: isLantern ? '#FF6B35' : '#F7CE68',
+          color,
           secondaryColor: '#FFF3B0',
           alpha: 0.88,
+          sprite: getSpriteForParticleKind(kind, color),
         });
       }
     }
 
     // ============================================================================
-    // 2. HÀM TẠO PHÁO HOA ĐẶC TRƯNG THEO TỪNG PHONG CÁCH
+    // 2. HÀM TẠO PHÁO HOA ĐẶC TRƯNG THEO TỪNG PHONG CÁCH (GIỮ NGUYÊN 100%)
     // ============================================================================
     const spawnStyleFirework = (cx: number, cy: number) => {
+      if (isTabHidden || sparks.length > 360) return;
+
       if (styleId === 'fairytale') {
-        // PHÁO HOA HÌNH TRÁI TIM LÃNG MẠN (Heart Parametric Curve)
         const total = 44;
         for (let i = 0; i < total; i++) {
           const t = (Math.PI * 2 * i) / total;
-          // Phương trình đường cong trái tim
           const hx = 16 * Math.pow(Math.sin(t), 3);
           const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
           const scale = 0.22 + Math.random() * 0.04;
+          const color = i % 2 === 0 ? '#FF4D79' : '#FFB3C6';
           sparks.push({
             x: cx,
             y: cy,
@@ -266,10 +501,11 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             vy: hy * scale,
             alpha: 1,
             decay: 0.013 + Math.random() * 0.006,
-            color: i % 2 === 0 ? '#FF4D79' : '#FFB3C6',
+            color,
             size: 3.2,
             shape: 'heart',
             gravity: 0.02,
+            sprite: getHeartSprite(color, true),
           });
         }
         symbolFlashes.push({
@@ -277,16 +513,15 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           y: cy,
           alpha: 1,
           scale: 0.6,
-          text: '♥',
-          color: '#FF4D79',
+          sprite: getSymbolFlashSprite('♥', '#FF4D79'),
         });
       } else if (styleId === 'editorial') {
-        // PHÁO HOA THÁC VÀNG SÂM PANH & SAO KIM CƯƠNG 4 CẠNH (Vogue Champagne Willow)
         const total = 48;
         const goldPalette = ['#D4AF37', '#FFF3C4', '#C5A059', '#FFFFFF'];
         for (let i = 0; i < total; i++) {
           const angle = (Math.PI * 2 * i) / total + (Math.random() - 0.5) * 0.12;
           const speed = Math.random() * 4.5 + 1.4;
+          const color = goldPalette[i % goldPalette.length];
           sparks.push({
             x: cx,
             y: cy,
@@ -296,19 +531,21 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             vy: Math.sin(angle) * speed,
             alpha: 1,
             decay: 0.011 + Math.random() * 0.007,
-            color: goldPalette[i % goldPalette.length],
+            color,
             size: Math.random() * 3.5 + 2.2,
             shape: 'star',
-            gravity: 0.065, // Rơi rủ xuống như thác kim tuyến vàng
+            gravity: 0.065,
+            sprite: getStarSprite(color),
           });
         }
       } else if (styleId === 'cinematic') {
-        // ĐẠI TIỆC PHÁO HOA ĐÊM ĐA TẦNG CÓ VỆT SÁNG DÀI (Double Ring Peony & Chrysanthemum)
         const outerCount = 46;
         const innerCount = 26;
         const palette = ['#FFD166', '#FF6B8B', '#4CC9F0', '#F72585', '#FFF3B0'];
         const mainColor = palette[Math.floor(Math.random() * palette.length)];
         const subColor = '#FFD166';
+        const mainDot = getGlowDotSprite(mainColor);
+        const subStar = getStarSprite(subColor);
 
         for (let i = 0; i < outerCount; i++) {
           const angle = (Math.PI * 2 * i) / outerCount;
@@ -326,6 +563,7 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             size: 2.6,
             shape: 'trail',
             gravity: 0.04,
+            sprite: mainDot,
           });
         }
         for (let i = 0; i < innerCount; i++) {
@@ -344,15 +582,16 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             size: 2.2,
             shape: 'star',
             gravity: 0.03,
+            sprite: subStar,
           });
         }
       } else if (styleId === 'garden') {
-        // PHÁO HOA XANH NGỌC & VÀNG KIM (Emerald Sparkle Garden)
         const total = 46;
         const gardenPalette = ['#4E8A5E', '#83C294', '#D4AF37', '#FFFDF9', '#A8D5BA'];
         for (let i = 0; i < total; i++) {
           const angle = (Math.PI * 2 * i) / total + (Math.random() - 0.5) * 0.15;
           const speed = Math.random() * 4.2 + 1.6;
+          const color = gardenPalette[i % gardenPalette.length];
           sparks.push({
             x: cx,
             y: cy,
@@ -362,10 +601,11 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             vy: Math.sin(angle) * speed,
             alpha: 1,
             decay: 0.012 + Math.random() * 0.006,
-            color: gardenPalette[i % gardenPalette.length],
+            color,
             size: Math.random() * 3.5 + 2.2,
             shape: 'star',
             gravity: 0.045,
+            sprite: getStarSprite(color),
           });
         }
         symbolFlashes.push({
@@ -373,16 +613,15 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           y: cy,
           alpha: 1,
           scale: 0.65,
-          text: '🌿',
-          color: '#83C294',
+          sprite: getSymbolFlashSprite('🌿', '#83C294'),
         });
       } else if (styleId === 'calla') {
-        // PHÁO HOA RƯỢU BORDEAUX & VÀNG HOÀNG GIA (Burgundy Calla Romance)
         const total = 46;
         const callaPalette = ['#9B2240', '#681427', '#D4AF37', '#FCE79C', '#FFD1DC'];
         for (let i = 0; i < total; i++) {
           const angle = (Math.PI * 2 * i) / total + (Math.random() - 0.5) * 0.15;
           const speed = Math.random() * 4.4 + 1.8;
+          const color = callaPalette[i % callaPalette.length];
           sparks.push({
             x: cx,
             y: cy,
@@ -392,10 +631,11 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             vy: Math.sin(angle) * speed,
             alpha: 1,
             decay: 0.012 + Math.random() * 0.006,
-            color: callaPalette[i % callaPalette.length],
+            color,
             size: Math.random() * 3.6 + 2.2,
             shape: 'star',
             gravity: 0.05,
+            sprite: getStarSprite(color),
           });
         }
         symbolFlashes.push({
@@ -403,17 +643,18 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           y: cy,
           alpha: 1,
           scale: 0.65,
-          text: '✨',
-          color: '#D4AF37',
+          sprite: getSymbolFlashSprite('✨', '#D4AF37'),
         });
       } else {
-        // PHÁO HOA CUNG ĐÌNH ĐÔNG DƯƠNG: NỔ ẤN SONG HỶ (囍) VÀ HOA MAI VÀNG ĐỎ SON
         const total = 44;
+        const goldDot = getGlowDotSprite('#F7CE68');
+        const redDot = getGlowDotSprite('#FF3B3B');
         for (let i = 0; i < total; i++) {
           const angle = (Math.PI * 2 * i) / total;
-          // Tạo hình bông hoa 8 cánh hoàng gia
           const petalMod = 1 + 0.35 * Math.cos(8 * angle);
           const speed = 3.2 * petalMod;
+          const isEven = i % 2 === 0;
+          const color = isEven ? '#F7CE68' : '#FF3B3B';
           sparks.push({
             x: cx,
             y: cy,
@@ -423,10 +664,11 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
             vy: Math.sin(angle) * speed,
             alpha: 1,
             decay: 0.013,
-            color: i % 2 === 0 ? '#F7CE68' : '#FF3B3B',
+            color,
             size: 2.8,
             shape: 'trail',
             gravity: 0.03,
+            sprite: isEven ? goldDot : redDot,
           });
         }
         symbolFlashes.push({
@@ -434,15 +676,13 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
           y: cy,
           alpha: 1,
           scale: 0.7,
-          text: '囍',
-          color: '#F7CE68',
+          sprite: getSymbolFlashSprite('囍', '#F7CE68'),
         });
       }
     };
 
-    // Tạo sao băng cho phong cách Cinematic
     const spawnShootingStar = () => {
-      if (styleId !== 'cinematic') return;
+      if (styleId !== 'cinematic' || isTabHidden) return;
       shootingStars.push({
         x: Math.random() * width * 0.8,
         y: Math.random() * height * 0.35,
@@ -457,7 +697,7 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
 
     window.triggerWeddingFireworks = (burstCount = 5) => {
       for (let i = 0; i < burstCount; i++) {
-        setTimeout(() => {
+        window.setTimeout(() => {
           const rx = width * (0.18 + Math.random() * 0.64);
           const ry = height * (0.15 + Math.random() * 0.42);
           spawnStyleFirework(rx, ry);
@@ -467,6 +707,7 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
     };
 
     const autoFireworkInterval = window.setInterval(() => {
+      if (isTabHidden) return;
       const rx = width * (0.15 + Math.random() * 0.7);
       const ry = height * (0.12 + Math.random() * 0.42);
       spawnStyleFirework(rx, ry);
@@ -492,53 +733,41 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
 
     // ============================================================================
-    // 3. CÁC HÀM VẼ HÌNH HỌC NGHỆ THUẬT TRÊN CANVAS
+    // 3. VÒNG LẶP VẼ GPU SPRITE BLIT SIÊU MƯỢT (0 SHADOWBLUR, 0 GC CHURNING)
     // ============================================================================
-    const drawHeart = (x: number, y: number, size: number, color: string) => {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      const topCurveHeight = size * 0.3;
-      ctx.moveTo(0, topCurveHeight);
-      ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
-      ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, (size + topCurveHeight) / 1.4, 0, size);
-      ctx.bezierCurveTo(0, (size + topCurveHeight) / 1.4, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
-      ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    };
-
-    const drawFourPointStar = (x: number, y: number, radius: number, color: string, rot = 0) => {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rot);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        ctx.lineTo(Math.cos((i * Math.PI) / 2) * radius, Math.sin((i * Math.PI) / 2) * radius);
-        ctx.lineTo(
-          Math.cos(((i + 0.5) * Math.PI) / 2) * (radius * 0.28),
-          Math.sin(((i + 0.5) * Math.PI) / 2) * (radius * 0.28)
-        );
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+    const drawTransformedSprite = (
+      img: HTMLCanvasElement,
+      x: number,
+      y: number,
+      rot: number,
+      sx: number,
+      sy: number,
+      drawSize: number
+    ) => {
+      const cos = Math.cos(rot) * dpr;
+      const sin = Math.sin(rot) * dpr;
+      ctx.setTransform(cos * sx, sin * sx, -sin * sy, cos * sy, x * dpr, y * dpr);
+      const half = drawSize * 0.5;
+      ctx.drawImage(img, -half, -half, drawSize, drawSize);
     };
 
     const render = () => {
+      if (isTabHidden) {
+        animationFrameId = 0;
+        return;
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      // A. Vẽ các hạt môi trường theo từng phong cách
-      for (const p of particles) {
+      // A. Vẽ các hạt môi trường bằng GPU Sprite Blit
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         p.phase += p.phaseSpeed;
         p.angle += p.spin;
         p.x += p.vx + Math.sin(p.phase) * 0.4;
         p.y += p.vy;
 
-        // Xử lý biên cho cả hạt rơi xuống và hạt bay lên (bướm, bọt sâm panh, đèn trời)
         if (p.vy > 0 && p.y > height + 30) {
           p.y = -25;
           p.x = Math.random() * width;
@@ -549,138 +778,95 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
         if (p.x > width + 30) p.x = -25;
         if (p.x < -30) p.x = width + 25;
 
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-
         if (p.kind === 'heart') {
-          ctx.translate(p.x, p.y);
-          ctx.rotate(Math.sin(p.phase) * 0.25);
-          drawHeart(0, -p.size * 0.5, p.size, p.color);
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 22) * 72;
+          drawTransformedSprite(p.sprite, p.x, p.y, Math.sin(p.phase) * 0.25, 1, 1, dSize);
         } else if (p.kind === 'petal') {
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.scale(1, Math.max(0.25, Math.abs(Math.cos(p.phase))));
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.bezierCurveTo(p.size, -p.size * 0.9, p.size * 1.5, p.size * 0.5, 0, p.size * 1.45);
-          ctx.bezierCurveTo(-p.size * 1.5, p.size * 0.5, -p.size, -p.size * 0.9, 0, 0);
-          ctx.fill();
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 16) * 72;
+          const flipY = Math.max(0.25, Math.abs(Math.cos(p.phase)));
+          drawTransformedSprite(p.sprite, p.x, p.y, p.angle, 1, flipY, dSize);
         } else if (p.kind === 'butterfly') {
-          // Bướm vàng vỗ cánh bay lượn
-          ctx.translate(p.x, p.y);
-          ctx.rotate(Math.sin(p.phase * 0.3) * 0.25);
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 18) * 84;
           const wingScale = Math.abs(Math.cos(p.phase)) * 0.85 + 0.15;
-          ctx.scale(wingScale, 1);
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = '#FFD700';
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.ellipse(-p.size * 0.45, 0, p.size * 0.55, p.size * 0.35, -0.3, 0, Math.PI * 2);
-          ctx.ellipse(p.size * 0.45, 0, p.size * 0.55, p.size * 0.35, 0.3, 0, Math.PI * 2);
-          ctx.fill();
+          drawTransformedSprite(
+            p.sprite,
+            p.x,
+            p.y,
+            Math.sin(p.phase * 0.3) * 0.25,
+            wingScale,
+            1,
+            dSize
+          );
         } else if (p.kind === 'diamond-star') {
           const twinkle = (Math.sin(p.phase * 1.5) + 1) * 0.5;
           ctx.globalAlpha = 0.25 + twinkle * 0.75;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
-          drawFourPointStar(p.x, p.y, p.size * (0.7 + twinkle * 0.5), p.color, p.angle);
+          const r = p.size * (0.7 + twinkle * 0.5);
+          const dSize = (r / 18) * 80;
+          drawTransformedSprite(p.sprite, p.x, p.y, p.angle, 1, 1, dSize);
         } else if (p.kind === 'champagne-bubble') {
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.fillStyle = 'rgba(255,255,255,0.45)';
-          ctx.beginPath();
-          ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.25, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 18) * 56;
+          ctx.drawImage(p.sprite, p.x - dSize * 0.5, p.y - dSize * 0.5, dSize, dSize);
         } else if (p.kind === 'gold-foil') {
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.scale(Math.cos(p.phase), Math.sin(p.phase));
-          ctx.fillStyle = p.color;
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 22) * 40;
+          const sx = Math.cos(p.phase) || 0.05;
+          const sy = Math.sin(p.phase) || 0.05;
+          drawTransformedSprite(p.sprite, p.x, p.y, p.angle, sx, sy, dSize);
         } else if (p.kind === 'firefly') {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           const glow = (Math.sin(p.phase) + 1) * 0.5;
           ctx.globalAlpha = 0.2 + glow * 0.8;
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 14;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (0.6 + glow * 0.6), 0, Math.PI * 2);
-          ctx.fill();
+          const r = p.size * (0.6 + glow * 0.6);
+          const dSize = (r / 10) * 64;
+          ctx.drawImage(p.sprite, p.x - dSize * 0.5, p.y - dSize * 0.5, dSize, dSize);
         } else if (p.kind === 'lantern') {
-          // Đèn trời Hội An phát sáng bay lên
-          ctx.translate(p.x, p.y);
-          ctx.rotate(Math.sin(p.phase) * 0.08);
-          ctx.shadowColor = '#FF9F1C';
-          ctx.shadowBlur = 18;
-          const grad = ctx.createRadialGradient(0, p.size * 0.2, 1, 0, 0, p.size);
-          grad.addColorStop(0, '#FFF3B0');
-          grad.addColorStop(0.5, '#FF9F1C');
-          grad.addColorStop(1, '#E71D36');
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.roundRect(-p.size * 0.42, -p.size * 0.55, p.size * 0.84, p.size * 1.1, [
-            p.size * 0.3,
-            p.size * 0.3,
-            p.size * 0.1,
-            p.size * 0.1,
-          ]);
-          ctx.fill();
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 20) * 96;
+          drawTransformedSprite(p.sprite, p.x, p.y, Math.sin(p.phase) * 0.08, 1, 1, dSize);
         } else if (p.kind === 'apricot-blossom') {
-          // Hoa mai vàng 5 cánh Đông Dương
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.fillStyle = p.color;
-          for (let k = 0; k < 5; k++) {
-            ctx.rotate((Math.PI * 2) / 5);
-            ctx.beginPath();
-            ctx.arc(0, -p.size * 0.55, p.size * 0.36, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.fillStyle = '#B91C1C';
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size * 0.2, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.globalAlpha = p.alpha;
+          const dSize = (p.size / 18) * 64;
+          drawTransformedSprite(p.sprite, p.x, p.y, p.angle, 1, 1, dSize);
         }
-
-        ctx.restore();
       }
 
-      // B. Vẽ Sao Băng (Shooting Stars) cho phong cách Cinematic
-      for (let i = shootingStars.length - 1; i >= 0; i--) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // B. Vẽ Sao Băng (Shooting Stars) cho phong cách Cinematic (Zero-GC compaction)
+      let stWrite = 0;
+      for (let i = 0; i < shootingStars.length; i++) {
         const st = shootingStars[i];
         st.x += st.vx;
         st.y += st.vy;
         st.alpha -= st.decay;
-        if (st.alpha <= 0.02) {
-          shootingStars.splice(i, 1);
-          continue;
-        }
-        ctx.save();
-        ctx.globalAlpha = st.alpha;
-        const grad = ctx.createLinearGradient(
-          st.x,
-          st.y,
-          st.x - st.vx * 8,
-          st.y - st.vy * 8
-        );
+        if (st.alpha <= 0.02) continue;
+
+        shootingStars[stWrite++] = st;
+        const tailX = st.x - st.vx * 8;
+        const tailY = st.y - st.vy * 8;
+        const grad = ctx.createLinearGradient(st.x, st.y, tailX, tailY);
         grad.addColorStop(0, '#FFFFFF');
         grad.addColorStop(0.4, st.color);
         grad.addColorStop(1, 'transparent');
+        ctx.globalAlpha = st.alpha;
         ctx.strokeStyle = grad;
         ctx.lineWidth = 2.2;
         ctx.beginPath();
         ctx.moveTo(st.x, st.y);
-        ctx.lineTo(st.x - st.vx * 8, st.y - st.vy * 8);
+        ctx.lineTo(tailX, tailY);
         ctx.stroke();
-        ctx.restore();
       }
+      shootingStars.length = stWrite;
 
-      // C. Vẽ Pháo Hoa theo từng hình dạng đặc trưng (Trái tim / Sao 4 cạnh / Vệt đuôi sáng)
-      for (let i = sparks.length - 1; i >= 0; i--) {
+      // C. Vẽ Pháo Hoa tốc độ cao không dùng shadowBlur runtime (Zero-GC compaction)
+      ctx.lineCap = 'round';
+      let spWrite = 0;
+      for (let i = 0; i < sparks.length; i++) {
         const s = sparks[i];
         s.prevX = s.x;
         s.prevY = s.y;
@@ -691,70 +877,68 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
         s.vy *= 0.982;
         s.alpha -= s.decay;
 
-        if (s.alpha <= 0.02) {
-          sparks.splice(i, 1);
-          continue;
-        }
+        if (s.alpha <= 0.02) continue;
+        sparks[spWrite++] = s;
 
-        ctx.save();
         ctx.globalAlpha = s.alpha;
-        ctx.shadowColor = s.color;
-        ctx.shadowBlur = 8;
 
-        if (s.shape === 'heart') {
-          drawHeart(s.x, s.y, s.size * 2.1, s.color);
-        } else if (s.shape === 'star') {
-          drawFourPointStar(s.x, s.y, s.size * 1.6, s.color);
+        if (s.shape === 'heart' && s.sprite) {
+          const dSize = ((s.size * 2.1) / 22) * 72;
+          ctx.drawImage(s.sprite, s.x - dSize * 0.5, s.y - dSize * 0.35, dSize, dSize);
+        } else if (s.shape === 'star' && s.sprite) {
+          const dSize = ((s.size * 1.6) / 18) * 80;
+          ctx.drawImage(s.sprite, s.x - dSize * 0.5, s.y - dSize * 0.5, dSize, dSize);
         } else if (s.shape === 'trail') {
           ctx.strokeStyle = s.color;
           ctx.lineWidth = s.size;
-          ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(s.prevX, s.prevY);
           ctx.lineTo(s.x, s.y);
           ctx.stroke();
-        } else {
-          ctx.fillStyle = s.color;
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-          ctx.fill();
+          if (s.sprite) {
+            const glowSize = (s.size / 10) * 44;
+            ctx.drawImage(s.sprite, s.x - glowSize * 0.5, s.y - glowSize * 0.5, glowSize, glowSize);
+          }
+        } else if (s.sprite) {
+          const dSize = (s.size / 10) * 64;
+          ctx.drawImage(s.sprite, s.x - dSize * 0.5, s.y - dSize * 0.5, dSize, dSize);
         }
-
-        ctx.restore();
       }
+      sparks.length = spWrite;
 
-      // D. Vẽ Biểu Tượng Tỏa Sáng Ở Tâm Pháo Hoa (♥ cho Fine Art, 囍 cho Đông Dương)
-      for (let i = symbolFlashes.length - 1; i >= 0; i--) {
+      // D. Vẽ Biểu Tượng Tỏa Sáng Ở Tâm Pháo Hoa (♥ / 🌿 / ✨ / 囍)
+      let flWrite = 0;
+      for (let i = 0; i < symbolFlashes.length; i++) {
         const fl = symbolFlashes[i];
         fl.alpha -= 0.022;
         fl.scale += 0.025;
-        if (fl.alpha <= 0.02) {
-          symbolFlashes.splice(i, 1);
-          continue;
-        }
-        ctx.save();
+        if (fl.alpha <= 0.02) continue;
+
+        symbolFlashes[flWrite++] = fl;
         ctx.globalAlpha = fl.alpha;
-        ctx.translate(fl.x, fl.y);
-        ctx.scale(fl.scale, fl.scale);
-        ctx.fillStyle = fl.color;
-        ctx.shadowColor = fl.color;
-        ctx.shadowBlur = 15;
-        ctx.font = 'bold 28px "Cormorant Garamond", serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(fl.text, 0, 0);
-        ctx.restore();
+        const dSize = 80 * fl.scale;
+        ctx.drawImage(fl.sprite, fl.x - dSize * 0.5, fl.y - dSize * 0.5, dSize, dSize);
       }
+      symbolFlashes.length = flWrite;
 
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    const handleVisibilityChange = () => {
+      isTabHidden = document.hidden;
+      if (!isTabHidden && animationFrameId === 0) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    animationFrameId = requestAnimationFrame(render);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       clearInterval(autoFireworkInterval);
-      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('resize', syncCanvasSize);
       window.removeEventListener('pointerdown', handlePointerDown);
     };
   }, [styleId]);
@@ -762,7 +946,7 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({ styleId }) => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-30"
+      className="fixed inset-0 pointer-events-none z-30 transform-gpu"
       aria-hidden="true"
     />
   );

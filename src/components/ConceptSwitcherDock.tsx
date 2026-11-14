@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Disc3,
@@ -30,7 +30,7 @@ interface ConceptSwitcherDockProps {
   hideStyleSwitcher?: boolean;
 }
 
-export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = ({
+export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = React.memo(({
   styleId,
   onSelectStyle,
   onReplayGate,
@@ -48,6 +48,7 @@ export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = ({
 
   const [showPlaylistDrawer, setShowPlaylistDrawer] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const showScrollTopRef = useRef(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,11 @@ export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = ({
 
   useEffect(() => {
     const onScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
+      const nextVisible = window.scrollY > 300;
+      if (nextVisible !== showScrollTopRef.current) {
+        showScrollTopRef.current = nextVisible;
+        setShowScrollTop(nextVisible);
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
@@ -179,7 +184,7 @@ export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = ({
         }`}
       >
         <div
-          className={`bg-stone-950/92 backdrop-blur-2xl border border-amber-300/25 shadow-[0_20px_60px_rgba(0,0,0,0.65)] ${
+          className={`bg-stone-950/92 backdrop-blur-md sm:backdrop-blur-xl border border-amber-300/25 shadow-[0_20px_60px_rgba(0,0,0,0.65)] ${
             hideStyleSwitcher
               ? 'rounded-full p-1.5 flex flex-row items-center gap-2'
               : 'rounded-2xl sm:rounded-full p-1.5 sm:p-2 flex flex-col sm:flex-row items-center gap-1.5'
@@ -243,4 +248,4 @@ export const ConceptSwitcherDock: React.FC<ConceptSwitcherDockProps> = ({
       </div>
     </>
   );
-};
+});

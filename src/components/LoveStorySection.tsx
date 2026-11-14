@@ -11,7 +11,7 @@ interface LoveStorySectionProps {
   data: WeddingData;
 }
 
-export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, data }) => {
+export const LoveStorySection: React.FC<LoveStorySectionProps> = React.memo(({ styleId, data }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const bgRef = useRef<HTMLImageElement | null>(null);
   const redThreadRef = useRef<HTMLDivElement | null>(null);
@@ -95,7 +95,9 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, dat
           ref={bgRef}
           src={data.sectionImages.loveStoryBg}
           alt={data.ceremonySection.title}
-          className="w-full h-full object-cover object-[center_35%] opacity-80"
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover object-[center_35%] opacity-80 will-change-transform"
         />
         <div
           className={`absolute inset-0 ${
@@ -151,6 +153,8 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, dat
                       <img
                         src={item.image}
                         alt={item.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover object-[center_26%] transition-transform duration-700 hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
@@ -170,6 +174,8 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, dat
                       <img
                         src={item.secondaryImage}
                         alt={item.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover object-[center_22%]"
                       />
                     </div>
@@ -177,7 +183,7 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, dat
 
                   {/* Thẻ Thông Tin Lớn Rõ Ràng */}
                   <div className="w-full md:w-1/2">
-                    <div className="rounded-[28px] sm:rounded-[32px] bg-black/50 backdrop-blur-2xl border border-amber-300/40 p-6 sm:p-10 shadow-2xl space-y-4">
+                    <div className="rounded-[28px] sm:rounded-[32px] bg-black/55 backdrop-blur-md sm:backdrop-blur-xl border border-amber-300/40 p-6 sm:p-10 shadow-2xl space-y-4">
                       <span className="inline-block text-[11px] uppercase tracking-[0.18em] sm:tracking-[0.26em] text-amber-300 font-semibold whitespace-nowrap">
                         {item.badge}
                       </span>
@@ -221,4 +227,4 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ styleId, dat
       </div>
     </section>
   );
-};
+});

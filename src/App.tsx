@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -12,7 +12,6 @@ import {
 } from './data/weddingData';
 import { soundEngine } from './utils/soundEngine';
 import { fetchCloudWishes, saveCloudWish } from './utils/cloudWishes';
-import { ThreeWeddingScene } from './components/ThreeWeddingScene';
 import { AmbientCanvas } from './components/AmbientCanvas';
 import { OpeningGate } from './components/OpeningGate';
 import { HeroSection } from './components/HeroSection';
@@ -23,10 +22,12 @@ import { EventsSection } from './components/EventsSection';
 import { GallerySection } from './components/GallerySection';
 import { RsvpWishesSection } from './components/RsvpWishesSection';
 import { ConceptSwitcherDock } from './components/ConceptSwitcherDock';
-import { WhiteMinimalInvitation } from './components/WhiteMinimalInvitation';
-import { GardenEmeraldInvitation } from './components/GardenEmeraldInvitation';
-import { BurgundyCallaInvitation } from './components/BurgundyCallaInvitation';
-import { AdminGuestModal } from './components/AdminGuestModal';
+
+const ThreeWeddingScene = lazy(() => import('./components/ThreeWeddingScene'));
+const WhiteMinimalInvitation = lazy(() => import('./components/WhiteMinimalInvitation'));
+const GardenEmeraldInvitation = lazy(() => import('./components/GardenEmeraldInvitation'));
+const BurgundyCallaInvitation = lazy(() => import('./components/BurgundyCallaInvitation'));
+const AdminGuestModal = lazy(() => import('./components/AdminGuestModal'));
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -51,12 +52,14 @@ function mergeUniqueWishes(...lists: WishItem[][]): WishItem[] {
 }
 
 /**
- * Nhận diện phong cách từ 5 đường dẫn public độc lập:
+ * Nhận diện phong cách từ các đường dẫn public độc lập:
  * - /fine-art -> fairytale (01. Thơ Mộng Fine Art)
  * - /vogue -> editorial (02. Tạp Chí Vogue)
  * - /starlight -> cinematic (03. Đêm Pháo Hoa 3D)
  * - /indochine -> indochine (04. Cung Đình Đông Dương)
- * - /minimal hoặc /tone-trang -> minimal (05. Tone Trắng Minimal giống video mẫu)
+ * - /minimal hoặc /tone-trang -> minimal (05. Tone Trắng Minimal)
+ * - /garden hoặc /khu-vuon -> garden (06. Khu Vườn Xanh Ngọc)
+ * - /calla hoặc /calla-do -> calla (07. Mẫu Thiệp Calla Đỏ)
  */
 function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boolean } {
   if (typeof window === 'undefined') {
@@ -124,7 +127,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     return { style: 'minimal', isLockedSingleStyle: true };
   }
 
-  // Style 6: Forest Emerald Garden (Khu Vườn Xanh Ngọc - Đức & Hậu)
+  // Style 6: Forest Emerald Garden (Khu Vườn Xanh Ngọc)
   if (
     pathname.includes('/garden') ||
     pathname.includes('/khu-vuon') ||
@@ -137,7 +140,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     return { style: 'garden', isLockedSingleStyle: true };
   }
 
-  // Style 7: Burgundy Calla Lily (Mẫu Thiệp Calla Đỏ - Đức & Hậu)
+  // Style 7: Burgundy Calla Lily (Mẫu Thiệp Calla Đỏ)
   if (
     pathname.includes('/calla') ||
     pathname.includes('/calla-do') ||
@@ -154,7 +157,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
 }
 
 export function App() {
-  const routeConfig = detectInitialRouteStyle();
+  const [routeConfig] = useState(detectInitialRouteStyle);
   const [styleId, setStyleId] = useState<StyleId>(routeConfig.style);
   const [isLockedSingleStyle] = useState<boolean>(routeConfig.isLockedSingleStyle);
   const [isGateOpen, setIsGateOpen] = useState<boolean>(false);
@@ -167,11 +170,14 @@ export function App() {
   });
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
+  // Thanh tiến trình cuộn cập nhật trực tiếp qua GPU transform scaleX (0 React re-render khi cuộn)
+  const progressBarRef = useRef<HTMLDivElement | null>(null);
+  const maxScrollRef = useRef<number>(1);
+
   // Khởi tạo lời chúc từ localStorage (không tự động sinh dữ liệu mẫu/test)
   const [wishes, setWishes] = useState<WishItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        // Xóa bộ nhớ đệm chứa dữ liệu mẫu/test cũ nếu có
         window.localStorage.removeItem('wedding_wishes_long_huyen_persistent_v1');
         const raw = window.localStorage.getItem(WISHES_STORAGE_KEY);
         if (raw) {
@@ -187,8 +193,6 @@ export function App() {
     return [];
   });
 
-  const [scrollProgress, setScrollProgress] = useState<number>(0);
-
   const [guestName, setGuestName] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -198,11 +202,28 @@ export function App() {
     return 'Bạn & Người Thương';
   });
 
+  // Giữ tiêu đề chuẩn Thành Long & Thanh Huyền trên tất cả các link đã deploy
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
+    }
+  }, []);
+
+  // Tải ngầm các chunk khác khi rảnh nếu đang ở chế độ xem tất cả các style
+  useEffect(() => {
+    if (isLockedSingleStyle || typeof window === 'undefined') return;
+    const timer = window.setTimeout(() => {
+      import('./components/WhiteMinimalInvitation');
+      import('./components/GardenEmeraldInvitation');
+      import('./components/BurgundyCallaInvitation');
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [isLockedSingleStyle]);
+
   // Đồng bộ lời chúc từ cả Cloud KV (cho GitHub Pages) và Local API (/api/wishes)
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Tải từ Cloud KV dùng chung cho 4 link GitHub Pages
     fetchCloudWishes()
       .then((cloudList) => {
         if (!isMounted || cloudList.length === 0) return;
@@ -218,7 +239,6 @@ export function App() {
       })
       .catch(() => {});
 
-    // 2. Tải từ /api/wishes (nếu chạy local hoặc Vercel)
     fetch('/api/wishes')
       .then((res) => (res.ok ? res.json() : null))
       .then((serverWishes) => {
@@ -240,15 +260,6 @@ export function App() {
     };
   }, []);
 
-  // Cập nhật tiêu đề trang web / tiêu đề in-app webview điện thoại theo dâu rể thực tế
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const groom = weddingData.groom.shortName || weddingData.groom.fullName;
-      const bride = weddingData.bride.shortName || weddingData.bride.fullName;
-      document.title = `THIỆP CƯỚI ${groom.toUpperCase()} & ${bride.toUpperCase()}`;
-    }
-  }, [weddingData]);
-
   // Tự động kích hoạt nhạc ở cú chạm đầu tiên nếu trình duyệt chặn autoplay khi thiệp tự mở
   useEffect(() => {
     const unlockAudioOnFirstGesture = () => {
@@ -269,20 +280,66 @@ export function App() {
     };
   }, []);
 
+  // Theo dõi chiều cao trang bằng ResizeObserver và cập nhật thanh progress bằng GPU scaleX (0 layout thrashing)
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateMaxScroll = () => {
+      maxScrollRef.current = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    };
+
+    updateMaxScroll();
+
+    let rafPending = false;
+    const updateProgressDom = () => {
+      rafPending = false;
+      if (!progressBarRef.current) return;
+      const ratio = Math.min(1, Math.max(0, window.scrollY / maxScrollRef.current));
+      progressBarRef.current.style.transform = `scaleX(${ratio.toFixed(4)})`;
+    };
+
+    const onScroll = () => {
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(updateProgressDom);
+      }
+    };
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(updateMaxScroll);
+      ro.observe(document.documentElement);
+    }
+
+    window.addEventListener('resize', updateMaxScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    updateProgressDom();
+
+    return () => {
+      window.removeEventListener('resize', updateMaxScroll);
+      window.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+    };
+  }, [styleId, isGateOpen]);
+
+  // Chỉ khởi chạy Lenis smoothWheel trên máy tính (pointer: fine) ở các Style 1–4 có ScrollTrigger;
+  // Trên điện thoại cảm ứng dùng 100% Native 120Hz Hardware Scroll siêu mượt!
+  const isScrollyStyle =
+    styleId !== 'minimal' && styleId !== 'garden' && styleId !== 'calla';
+
+  useEffect(() => {
+    if (!isScrollyStyle || typeof window === 'undefined') return;
+    const isFinePointer = window.matchMedia?.('(pointer: fine)').matches ?? false;
+    if (!isFinePointer) return;
+
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
+      syncTouch: false,
     });
 
-    lenis.on('scroll', () => {
-      ScrollTrigger.update();
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalHeight > 0) {
-        setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100)));
-      }
-    });
+    lenis.on('scroll', ScrollTrigger.update);
 
     const updateTicker = (time: number) => {
       lenis.raf(time * 1000);
@@ -295,33 +352,47 @@ export function App() {
       gsap.ticker.remove(updateTicker);
       lenis.destroy();
     };
-  }, []);
+  }, [isScrollyStyle]);
 
   useEffect(() => {
+    if (!isScrollyStyle) return;
     const timer = setTimeout(() => {
       ScrollTrigger.refresh();
-    }, 350);
+    }, 320);
     return () => clearTimeout(timer);
-  }, [styleId, isGateOpen]);
+  }, [isScrollyStyle, styleId, isGateOpen]);
 
-  const handleUnlockGate = () => {
-    if (isGateOpen) return;
-    soundEngine.playOpenChime();
-    soundEngine.startMusic(0); // Phát ngay bài số 1: Lễ Đường - Kai Đinh
-    setIsMusicPlaying(true);
-    setIsGateOpen(true);
-    setTimeout(() => {
-      window.triggerWeddingFireworks?.(6);
-    }, 300);
-  };
+  const handleUnlockGate = useCallback(() => {
+    setIsGateOpen((prev) => {
+      if (prev) return prev;
+      soundEngine.playOpenChime();
+      soundEngine.startMusic(0);
+      setIsMusicPlaying(true);
+      setTimeout(() => {
+        window.triggerWeddingFireworks?.(6);
+      }, 300);
+      return true;
+    });
+  }, []);
 
-  const handleToggleMusic = () => {
+  const handleToggleMusic = useCallback(() => {
     const playing = soundEngine.toggleMusic();
     setIsMusicPlaying(playing);
-  };
+  }, []);
+
+  const handleStartMusicIfNotPlaying = useCallback(() => {
+    if (!soundEngine.getIsPlaying()) {
+      soundEngine.startMusic(0);
+      setIsMusicPlaying(true);
+    }
+  }, []);
+
+  const handleOpenAdmin = useCallback(() => {
+    setIsAdminModalOpen(true);
+  }, []);
 
   // Lưu lời chúc vĩnh viễn vào Cloud KV + LocalStorage + Backend API
-  const handleAddWish = (newWish: WishItem) => {
+  const handleAddWish = useCallback((newWish: WishItem) => {
     setWishes((prev) => {
       const updated = mergeUniqueWishes([newWish], prev);
       try {
@@ -332,19 +403,17 @@ export function App() {
       return updated;
     });
 
-    // Lưu lên Cloud KV (cho GitHub Pages)
     saveCloudWish(newWish).catch(() => {});
 
-    // Lưu vào /api/wishes (cho Local / Vercel)
     fetch('/api/wishes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newWish),
     }).catch(() => {});
-  };
+  }, []);
 
   // Cập nhật thông tin khách mời từ Admin (sửa tên, RSVP, lời chúc)
-  const handleUpdateWish = (updatedWish: WishItem) => {
+  const handleUpdateWish = useCallback((updatedWish: WishItem) => {
     setWishes((prev) => {
       const next = prev.map((w) => (w.id === updatedWish.id ? updatedWish : w));
       try {
@@ -354,10 +423,10 @@ export function App() {
       }
       return next;
     });
-  };
+  }, []);
 
   // Xóa khách mời khỏi danh sách từ Admin
-  const handleDeleteWish = (id: string) => {
+  const handleDeleteWish = useCallback((id: string) => {
     setWishes((prev) => {
       const next = prev.filter((w) => w.id !== id);
       try {
@@ -367,18 +436,16 @@ export function App() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleResetDefault = () => {
-    if (styleId === 'garden' || styleId === 'calla') {
-      setWeddingData(DUC_HAU_WEDDING_DATA);
-    } else {
-      setWeddingData(DEFAULT_WEDDING_DATA);
-    }
+  const handleResetDefault = useCallback(() => {
+    setWeddingData(
+      styleId === 'garden' || styleId === 'calla' ? DUC_HAU_WEDDING_DATA : DEFAULT_WEDDING_DATA
+    );
     setGuestName('Bạn & Người Thương');
-  };
+  }, [styleId]);
 
-  const handleSelectStyle = (id: StyleId) => {
+  const handleSelectStyle = useCallback((id: StyleId) => {
     setStyleId(id);
     if (id === 'garden' || id === 'calla') {
       setWeddingData(DUC_HAU_WEDDING_DATA);
@@ -388,41 +455,39 @@ export function App() {
     if (id === 'minimal' || id === 'garden' || id === 'calla') {
       setIsGateOpen(true);
     }
-  };
+  }, []);
 
   const theme = THEMES[styleId];
 
   return (
     <div className={`min-h-screen transition-colors duration-700 ${theme.bgPrimary} ${theme.textPrimary}`}>
-      {/* Thanh tiến trình cuộn trang mảnh ở đỉnh màn hình */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-black/15 pointer-events-none">
+      {/* Thanh tiến trình cuộn trang mảnh ở đỉnh màn hình (GPU scaleX, 0 React re-render) */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-black/15 pointer-events-none overflow-hidden">
         <div
+          ref={progressBarRef}
           style={{
-            width: `${scrollProgress}%`,
+            transform: 'scaleX(0)',
             backgroundColor: theme.accentHex,
           }}
-          className="h-full transition-all duration-150 shadow-[0_0_12px_rgba(251,191,36,0.9)]"
+          className="h-full w-full origin-left will-change-transform shadow-[0_0_10px_rgba(251,191,36,0.85)]"
         />
       </div>
 
       {/* PHONG CÁCH 05 (TONE TRẮNG MINIMAL) */}
       {styleId === 'minimal' ? (
         <>
-          <WhiteMinimalInvitation
-            data={weddingData}
-            wishes={wishes}
-            onAddWish={handleAddWish}
-            isMusicPlaying={isMusicPlaying}
-            onToggleMusic={handleToggleMusic}
-            guestName={guestName}
-            onOpenAdmin={() => setIsAdminModalOpen(true)}
-            onStartMusic={() => {
-              if (!soundEngine.getIsPlaying()) {
-                soundEngine.startMusic(0);
-                setIsMusicPlaying(true);
-              }
-            }}
-          />
+          <Suspense fallback={<div className="min-h-screen bg-[#FAF8F5]" />}>
+            <WhiteMinimalInvitation
+              data={weddingData}
+              wishes={wishes}
+              onAddWish={handleAddWish}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              guestName={guestName}
+              onOpenAdmin={handleOpenAdmin}
+              onStartMusic={handleStartMusicIfNotPlaying}
+            />
+          </Suspense>
           {!isLockedSingleStyle && (
             <ConceptSwitcherDock
               styleId={styleId}
@@ -442,21 +507,18 @@ export function App() {
       ) : styleId === 'garden' ? (
         /* PHONG CÁCH 06: FOREST EMERALD GARDEN (VIDEO 1 - ĐỨC & HẬU) */
         <>
-          <GardenEmeraldInvitation
-            data={weddingData}
-            wishes={wishes}
-            onAddWish={handleAddWish}
-            isMusicPlaying={isMusicPlaying}
-            onToggleMusic={handleToggleMusic}
-            guestName={guestName}
-            onOpenAdmin={() => setIsAdminModalOpen(true)}
-            onStartMusic={() => {
-              if (!soundEngine.getIsPlaying()) {
-                soundEngine.startMusic(0);
-                setIsMusicPlaying(true);
-              }
-            }}
-          />
+          <Suspense fallback={<div className="min-h-screen bg-[#152418]" />}>
+            <GardenEmeraldInvitation
+              data={weddingData}
+              wishes={wishes}
+              onAddWish={handleAddWish}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              guestName={guestName}
+              onOpenAdmin={handleOpenAdmin}
+              onStartMusic={handleStartMusicIfNotPlaying}
+            />
+          </Suspense>
           {!isLockedSingleStyle && (
             <ConceptSwitcherDock
               styleId={styleId}
@@ -476,21 +538,18 @@ export function App() {
       ) : styleId === 'calla' ? (
         /* PHONG CÁCH 07: BURGUNDY CALLA LILY (VIDEO 2 - ĐỨC & HẬU) */
         <>
-          <BurgundyCallaInvitation
-            data={weddingData}
-            wishes={wishes}
-            onAddWish={handleAddWish}
-            isMusicPlaying={isMusicPlaying}
-            onToggleMusic={handleToggleMusic}
-            guestName={guestName}
-            onOpenAdmin={() => setIsAdminModalOpen(true)}
-            onStartMusic={() => {
-              if (!soundEngine.getIsPlaying()) {
-                soundEngine.startMusic(0);
-                setIsMusicPlaying(true);
-              }
-            }}
-          />
+          <Suspense fallback={<div className="min-h-screen bg-[#240811]" />}>
+            <BurgundyCallaInvitation
+              data={weddingData}
+              wishes={wishes}
+              onAddWish={handleAddWish}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              guestName={guestName}
+              onOpenAdmin={handleOpenAdmin}
+              onStartMusic={handleStartMusicIfNotPlaying}
+            />
+          </Suspense>
           {!isLockedSingleStyle && (
             <ConceptSwitcherDock
               styleId={styleId}
@@ -510,12 +569,14 @@ export function App() {
       ) : (
         <>
           {/* LỚP 1: CẢNH 3D WEBGL THỜI GIAN THỰC (CẶP NHẪN CƯỚI VÀNG KIM 3D & THIÊN HÀ SAO 3D) */}
-          <ThreeWeddingScene styleId={styleId} />
+          <Suspense fallback={null}>
+            <ThreeWeddingScene styleId={styleId} paused={!isGateOpen} />
+          </Suspense>
 
           {/* LỚP 2: ĐỘNG CƠ PHÁO HOA & HẠT BAY ĐẶC TRƯNG CHO TỪNG PHONG CÁCH */}
           <AmbientCanvas styleId={styleId} />
 
-          {/* Màn hình Mở Thiệp Tự Động (8.8s) */}
+          {/* Màn hình Mở Thiệp Tự Động */}
           <OpeningGate
             isOpen={isGateOpen}
             onUnlock={handleUnlockGate}
@@ -524,7 +585,7 @@ export function App() {
             data={weddingData}
             guestName={guestName}
             hideStyleSwitcher={isLockedSingleStyle}
-            onOpenAdmin={() => setIsAdminModalOpen(true)}
+            onOpenAdmin={handleOpenAdmin}
           />
 
           {/* Nội dung chính với hiệu ứng 3D Scrollytelling tối ưu Mobile-First */}
@@ -544,7 +605,7 @@ export function App() {
             />
           </main>
 
-          {/* Dynamic Island Music Player (5 bài hát thật) & Thanh Điều Khiển */}
+          {/* Dynamic Island Music Player & Thanh Điều Khiển */}
           <ConceptSwitcherDock
             styleId={styleId}
             onSelectStyle={handleSelectStyle}
@@ -561,15 +622,19 @@ export function App() {
         </>
       )}
 
-      {/* Modal Quản Trị Khách Mời & RSVP (Mật khẩu: huyducdeptrai) */}
-      <AdminGuestModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        wishes={wishes}
-        onAddWish={handleAddWish}
-        onUpdateWish={handleUpdateWish}
-        onDeleteWish={handleDeleteWish}
-      />
+      {/* Modal Quản Trị Khách Mời & RSVP (Chỉ tải khi mở) */}
+      {isAdminModalOpen && (
+        <Suspense fallback={null}>
+          <AdminGuestModal
+            isOpen={isAdminModalOpen}
+            onClose={() => setIsAdminModalOpen(false)}
+            wishes={wishes}
+            onAddWish={handleAddWish}
+            onUpdateWish={handleUpdateWish}
+            onDeleteWish={handleDeleteWish}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

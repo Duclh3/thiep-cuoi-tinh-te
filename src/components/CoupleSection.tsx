@@ -7,7 +7,7 @@ interface CoupleSectionProps {
   data: WeddingData;
 }
 
-export const CoupleSection: React.FC<CoupleSectionProps> = ({ styleId, data }) => {
+export const CoupleSection: React.FC<CoupleSectionProps> = React.memo(({ styleId, data }) => {
   const theme = THEMES[styleId];
 
   const coupleItems = [
@@ -69,6 +69,8 @@ export const CoupleSection: React.FC<CoupleSectionProps> = ({ styleId, data }) =
                   <img
                     src={item.person.avatar}
                     alt={item.person.fullName}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover object-[center_18%] transition-transform duration-700 group-hover:scale-105"
                   />
                 </div>
@@ -95,4 +97,4 @@ export const CoupleSection: React.FC<CoupleSectionProps> = ({ styleId, data }) =
       </div>
     </section>
   );
-};
+});

@@ -8,7 +8,7 @@ interface EventsSectionProps {
   data: WeddingData;
 }
 
-export const EventsSection: React.FC<EventsSectionProps> = ({ styleId, data }) => {
+export const EventsSection: React.FC<EventsSectionProps> = React.memo(({ styleId, data }) => {
   const theme = THEMES[styleId];
 
   return (
@@ -56,7 +56,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ styleId, data }) =
                 {/* Cột Ảnh (4/12) */}
                 <div className="lg:col-span-4 p-4 border-b-2 lg:border-b-0 lg:border-r-2 border-stone-950">
                   <div className="relative aspect-[4/4.2] overflow-hidden bg-stone-900">
-                    <img src={ev.image} alt={ev.title} className="w-full h-full object-cover object-[center_22%]" />
+                    <img src={ev.image} alt={ev.title} loading="lazy" decoding="async" className="w-full h-full object-cover object-[center_22%]" />
                   </div>
                 </div>
 
@@ -164,6 +164,8 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ styleId, data }) =
                       <img
                         src={ev.image}
                         alt={ev.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover object-[center_22%] transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
@@ -237,4 +239,4 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ styleId, data }) =
       </div>
     </section>
   );
-};
+});

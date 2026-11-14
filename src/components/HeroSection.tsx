@@ -12,7 +12,7 @@ interface HeroSectionProps {
   guestName: string;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ styleId, data }) => {
+export const HeroSection: React.FC<HeroSectionProps> = React.memo(({ styleId, data }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const heroVisualRef = useRef<HTMLDivElement | null>(null);
   const theme = THEMES[styleId];
@@ -52,13 +52,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ styleId, data }) => {
         styleId === 'cinematic' ? 'film-grain' : styleId === 'indochine' ? 'indochine-pattern' : ''
       }`}
     >
-      {/* Hào quang ánh sáng 3D hậu cảnh */}
+      {/* Hào quang ánh sáng 3D hậu cảnh (dùng radial-gradient mềm trực tiếp, không tốn GPU blur-3xl) */}
       <div
-        style={{ background: `radial-gradient(circle, ${theme.accentHex}28 0%, transparent 70%)` }}
-        className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] sm:w-[760px] h-[480px] sm:h-[760px] rounded-full blur-3xl z-0"
+        style={{
+          background: `radial-gradient(circle, ${theme.accentHex}26 0%, ${theme.accentHex}10 38%, transparent 72%)`,
+        }}
+        className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[540px] sm:w-[860px] h-[540px] sm:h-[860px] rounded-full z-0"
       />
 
-      <div ref={heroVisualRef} className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 w-full">
+      <div ref={heroVisualRef} className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 w-full will-change-transform">
         {/* TIÊU ĐỀ ĐẦU TRANG TINH GỌN CHO TẤT CẢ CÁC STYLE (1–4):
             Chỉ ghi: Thiệp Mời + Tên Cô Dâu Chú Rể + Ngày Cưới */}
         <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-9">
@@ -227,4 +229,4 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ styleId, data }) => {
       </div>
     </section>
   );
-};
+});

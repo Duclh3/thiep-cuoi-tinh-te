@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { WeddingData, WishItem } from '../data/weddingData';
 import { soundEngine } from '../utils/soundEngine';
+import { preloadAndDecodeImages } from '../utils/imagePreloader';
 import { AmbientCanvas } from './AmbientCanvas';
 import { CrochetLaceMirrorFrame } from './CrochetLaceMirrorFrame';
 import { LuxuryWeddingEnvelope } from './LuxuryWeddingEnvelope';
@@ -87,27 +88,24 @@ export const GardenEmeraldInvitation: React.FC<GardenEmeraldInvitationProps> = (
     if (initial) setGuestInputName(initial);
   }, [guestName]);
 
-  // Tối ưu hiệu năng: Tải ngầm toàn bộ ảnh chính ngay khi ở màn hình chờ mở phong bì
+  // Tối ưu hiệu năng: Tải & giải mã ngầm ảnh chính theo hàng đợi mượt mà khi đang ở màn hình phong bì
   useEffect(() => {
     const imagesToPreload = [
+      data.sectionImages.envelopePolaroid,
+      data.sectionImages.heroLeftFloat,
+      decorAsset('garden-floral-cluster.png'),
       data.sectionImages.hero,
       data.sectionImages.loveStoryBg,
       ...(data.sectionImages.dressCodePhotos || [data.sectionImages.countdown]),
-      data.sectionImages.envelopePolaroid,
-      data.sectionImages.heroLeftFloat,
       data.sectionImages.kissPhoto,
       data.groom.avatar,
       data.bride.avatar,
-      decorAsset('garden-floral-cluster.png'),
       decorAsset('white-calla-single.png'),
+      data.sectionImages.thankYouBg,
+      ...data.album9Images.slice(0, 3).map((item) => item.url),
     ];
 
-    imagesToPreload.forEach((src) => {
-      if (!src) return;
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = src;
-    });
+    return preloadAndDecodeImages(imagesToPreload, { delayMs: 420, concurrency: 2 });
   }, [data]);
 
   const handleOpenEnvelope = () => {
@@ -223,10 +221,10 @@ export const GardenEmeraldInvitation: React.FC<GardenEmeraldInvitationProps> = (
     <div className="min-h-screen w-full bg-[#152418] text-[#22331E] flex justify-center items-start overflow-x-hidden md:py-8 md:px-6 relative">
       {/* NỀN VƯỜN HỒNG SƠN DẦU MỜ CHO MÀN HÌNH DESKTOP BÊN NGOÀI KHUNG THIỆP */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none opacity-45 blur-[2px]"
+        className="hidden md:block fixed inset-0 z-0 bg-cover bg-center pointer-events-none opacity-45"
         style={{ backgroundImage: `url("${decorAsset('garden-roses-bg.jpg')}")` }}
       />
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#111E14]/80 via-[#152418]/70 to-[#0F1B12]/90 pointer-events-none" />
+      <div className="hidden md:block fixed inset-0 z-0 bg-gradient-to-b from-[#111E14]/80 via-[#152418]/70 to-[#0F1B12]/90 pointer-events-none" />
 
       {/* ANIMATION HOA RƠI & TRÁI TIM RƠI LÃNG MẠN */}
       <AmbientCanvas styleId="garden" />
@@ -265,7 +263,7 @@ export const GardenEmeraldInvitation: React.FC<GardenEmeraldInvitationProps> = (
       </div>
 
       {/* KHUNG THIỆP CƯỚI CHÍNH */}
-      <div className="w-full max-w-[450px] md:max-w-[480px] bg-[#FAF9F5] shadow-[0_25px_80px_rgba(0,0,0,0.55)] md:rounded-2xl relative z-10 overflow-hidden transition-all duration-500">
+      <div className="w-full max-w-[450px] md:max-w-[480px] bg-[#FAF9F5] shadow-[0_25px_80px_rgba(0,0,0,0.55)] md:rounded-2xl relative z-10 overflow-hidden">
         {/* Thanh Tiêu Đề Mảnh Ở Đỉnh Thiệp */}
         <div className="sticky top-0 z-40 bg-[#FAF9F5]/95 backdrop-blur-md border-b border-[#E5E2D9] px-4 py-3 flex items-center justify-center text-[#3B5933]">
           <span className="font-serif-luxury text-xs sm:text-sm tracking-[0.14em] uppercase font-semibold text-center">
@@ -1083,3 +1081,5 @@ export const GardenEmeraldInvitation: React.FC<GardenEmeraldInvitationProps> = (
     </div>
   );
 };
+
+export default GardenEmeraldInvitation;
