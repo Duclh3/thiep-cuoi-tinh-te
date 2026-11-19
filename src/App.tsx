@@ -275,7 +275,11 @@ export function App() {
           ? 'THƯ MỜI CƯỚI HUY ĐỨC & PHAN HẬU'
           : 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
     }
-    if (isDangDaoProduct) {
+    if (styleId === 'lotus') {
+      soundEngine.setPreferredTrackId('template-08-video');
+    } else if (styleId === 'porcelain') {
+      soundEngine.setPreferredTrackId('template-09-video');
+    } else if (isDangDaoProduct) {
       soundEngine.setPreferredTrackId('ta-la-cua-nhau');
     } else {
       soundEngine.setPreferredTrackId(null);

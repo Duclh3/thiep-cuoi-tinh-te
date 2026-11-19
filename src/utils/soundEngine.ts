@@ -45,6 +45,18 @@ export const WEDDING_PLAYLIST: SongTrack[] = [
     artist: 'Đông Nhi & Ông Cao Thắng',
     src: withBase('/music/ta-la-cua-nhau.mp3'),
   },
+  {
+    id: 'template-08-video',
+    title: 'Nhạc Gốc Video Hoa Sen',
+    artist: 'Audio từ video mẫu 08',
+    src: withBase('/music/template-08-video.m4a'),
+  },
+  {
+    id: 'template-09-video',
+    title: 'Nhạc Gốc Video Hoa Xanh',
+    artist: 'Audio từ video mẫu 09',
+    src: withBase('/music/template-09-video.m4a'),
+  },
 ];
 
 type Listener = (state: { isPlaying: boolean; currentIndex: number; track: SongTrack }) => void;

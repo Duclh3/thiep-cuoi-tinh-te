@@ -20,6 +20,9 @@ import { soundEngine } from '../utils/soundEngine';
 
 export type ReplicaVariant = 'lotus' | 'porcelain';
 
+const BASE_URL = import.meta.env.BASE_URL || '/';
+const assetUrl = (path: string) => `${BASE_URL}${path.replace(/^\//, '')}`;
+
 interface VideoReplicaInvitationProps {
   variant: ReplicaVariant;
   data: WeddingData;
@@ -411,7 +414,9 @@ export const VideoReplicaInvitation: React.FC<VideoReplicaInvitationProps> = ({
   const accent = isLotus ? '#315b45' : '#173d78';
   const [isOpen, setIsOpen] = useState(isLotus);
   const [menuOpen, setMenuOpen] = useState(false);
-  const floral = isLotus ? '/images/decor/lotus-watercolor-cluster.png' : '/images/decor/porcelain-blue-floral-frame.png';
+  const floral = isLotus
+    ? assetUrl('/images/decor/lotus-watercolor-cluster.png')
+    : assetUrl('/images/decor/porcelain-blue-floral-frame.png');
   const calendarUrl = useMemo(() => buildGoogleCalendarUrl(data), [data]);
 
   const openInvitation = () => {
