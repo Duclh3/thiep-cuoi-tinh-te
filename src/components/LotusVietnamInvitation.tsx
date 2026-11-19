@@ -43,12 +43,14 @@ function getInitialGuestName(propName?: string): string {
  * Cánh hoa sen hồng trong suốt rơi chéo nhẹ nhàng (thuần CSS GPU — 60fps)
  */
 const LOTUS_PETALS = [
-  { left: '14%', dur: '13s', delay: '0s', size: 18, rot: 20 },
-  { left: '72%', dur: '15s', delay: '-4s', size: 16, rot: -25 },
-  { left: '38%', dur: '17s', delay: '-9s', size: 15, rot: 40 },
-  { left: '85%', dur: '14s', delay: '-2s', size: 20, rot: -15 },
-  { left: '24%', dur: '16s', delay: '-6s', size: 14, rot: 55 },
-  { left: '60%', dur: '18s', delay: '-11s', size: 17, rot: -35 },
+  { left: '12%', dur: '14s', delay: '0s', size: 19, rot: 20 },
+  { left: '78%', dur: '16s', delay: '-4s', size: 17, rot: -25 },
+  { left: '34%', dur: '18s', delay: '-9s', size: 15, rot: 40 },
+  { left: '88%', dur: '15s', delay: '-2s', size: 21, rot: -15 },
+  { left: '22%', dur: '17s', delay: '-6s', size: 14, rot: 55 },
+  { left: '62%', dur: '19s', delay: '-11s', size: 18, rot: -35 },
+  { left: '48%', dur: '20s', delay: '-14s', size: 16, rot: 15 },
+  { left: '8%', dur: '16.5s', delay: '-8s', size: 15, rot: -20 },
 ];
 
 /**
@@ -106,6 +108,7 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const userMutedManuallyRef = React.useRef(false);
 
   useEffect(() => {
     const initial = getInitialGuestName(guestName);
@@ -125,14 +128,33 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
     return preloadAndDecodeImages(urls, { delayMs: 200, concurrency: 3 });
   }, [data]);
 
-  // Tự động kích hoạt nhạc khi người dùng chạm lần đầu
+  // Tự động bật nhạc sau 1 giây khi vừa vào link (+ fallback chạm đầu tiên nếu trình duyệt chặn autoplay)
   useEffect(() => {
+    const autoTimer = window.setTimeout(() => {
+      if (!userMutedManuallyRef.current) {
+        onStartMusic();
+      }
+    }, 1000);
+
     const handleFirstGesture = () => {
-      onStartMusic();
+      if (!userMutedManuallyRef.current) {
+        onStartMusic();
+      }
       window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
     };
+
     window.addEventListener('pointerdown', handleFirstGesture, { passive: true });
-    return () => window.removeEventListener('pointerdown', handleFirstGesture);
+    window.addEventListener('touchstart', handleFirstGesture, { passive: true });
+    window.addEventListener('keydown', handleFirstGesture, { passive: true });
+
+    return () => {
+      window.clearTimeout(autoTimer);
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+    };
   }, [onStartMusic]);
 
   // Lấy ngày/tháng/năm từ dữ liệu Style 7 (03.03.2027)
@@ -245,85 +267,130 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
         </div>
 
         {/* ============================================================
-            PHẦN 1: BÌA MỞ ĐẦU HOA SEN (MIN-H-100SVH — UNROLL CENTER-OUT)
+            PHẦN 1: BÌA MỞ ĐẦU HOA SEN (CHẬM RÃI, CÂN ĐỐI BỐ CỤC — CHỈ 1 KHÓM SEN NỐI KHUNG)
            ============================================================ */}
-        <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-24 pt-16 text-center">
-          {/* Mảng màu nước hồng phấn mờ góc trên phải & xanh ngọc mờ góc dưới trái */}
+        <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-visible px-6 pb-28 pt-14 text-center">
+          {/* Lớp loang màu nước hồng phấn góc trên phải & xanh ngọc góc dưới trái */}
           <div
-            className="pointer-events-none absolute -right-12 -top-10 h-64 w-64 rounded-full opacity-45 blur-2xl"
+            className="pointer-events-none absolute -right-8 -top-6 h-72 w-72 rounded-full opacity-60 blur-2xl"
             style={{
               background:
-                'radial-gradient(circle, rgba(235,186,200,0.65) 0%, rgba(246,245,240,0) 72%)',
+                'radial-gradient(circle, rgba(238,186,202,0.72) 0%, rgba(246,245,240,0) 70%)',
             }}
           />
           <div
-            className="pointer-events-none absolute -bottom-12 -left-12 h-60 w-60 rounded-full opacity-40 blur-2xl"
+            className="pointer-events-none absolute bottom-10 -left-10 h-72 w-72 rounded-full opacity-55 blur-2xl"
             style={{
               background:
-                'radial-gradient(circle, rgba(173,204,178,0.55) 0%, rgba(246,245,240,0) 72%)',
+                'radial-gradient(circle, rgba(168,202,174,0.62) 0%, rgba(246,245,240,0) 72%)',
             }}
           />
 
-          {/* Lá sen màu nước rủ xuống ở góc trên trái (y hệt video 1) */}
+          {/* Lá sen màu nước đậm nét góc trên trái (xuất hiện từ từ 2.2s) */}
           <motion.img
             src={decorUrl('style8-lotus-top-leaf.jpg')}
             alt=""
-            initial={{ opacity: 0, x: -24, y: -24, rotate: -14 }}
-            animate={{ opacity: 0.92, x: 0, y: 0, rotate: -8 }}
-            transition={{ duration: 1.15, ease: 'easeOut' }}
-            className="pointer-events-none absolute -left-14 -top-16 w-48 select-none mix-blend-multiply"
+            initial={{ opacity: 0, x: -30, y: -30, rotate: -18 }}
+            animate={{ opacity: 0.94, x: 0, y: 0, rotate: -8 }}
+            transition={{ duration: 2.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-none absolute -left-12 -top-14 w-56 select-none mix-blend-multiply"
           />
 
-          {/* Cụm chữ mở dần từ giữa ra 2 bên (clipPath inset 50% -> 0%) đúng animation video 1 */}
+          {/* Nhành lá sen mờ nhẹ góc trên phải cân bằng không gian trống (đối xứng chéo tinh tế) */}
+          <motion.img
+            src={decorUrl('style8-lotus-top-leaf.jpg')}
+            alt=""
+            initial={{ opacity: 0, x: 24, y: -20 }}
+            animate={{ opacity: 0.24, x: 0, y: 0 }}
+            transition={{ duration: 2.5, delay: 0.45, ease: 'easeOut' }}
+            className="pointer-events-none absolute -right-20 top-10 w-44 -scale-x-100 rotate-[24deg] select-none mix-blend-multiply"
+          />
+
+          {/* Bóng lá sen thủy mặc dịu nhẹ ở góc dưới trái cân bằng với khóm hoa sen góc dưới phải */}
+          <motion.img
+            src={decorUrl('style8-lotus-top-leaf.jpg')}
+            alt=""
+            initial={{ opacity: 0, x: -24, y: 24 }}
+            animate={{ opacity: 0.32, x: 0, y: 0 }}
+            transition={{ duration: 2.4, delay: 0.65, ease: 'easeOut' }}
+            className="pointer-events-none absolute -left-20 bottom-12 w-48 rotate-[35deg] select-none mix-blend-multiply"
+          />
+
+          {/* Cụm chữ mở dần chậm rãi từ giữa ra 2 bên (2.6s) — bổ sung họa tiết nụ sen mảnh phía trên */}
           <motion.div
             initial={{ opacity: 0, clipPath: 'inset(0% 50% 0% 50%)' }}
             animate={{ opacity: 1, clipPath: 'inset(0% 0% 0% 0%)' }}
-            transition={{ duration: 1.35, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 -mt-12 flex flex-col items-center"
+            transition={{ duration: 2.6, delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 -mt-14 flex flex-col items-center"
           >
-            <p className="font-serif-luxury text-[22px] tracking-[0.03em] text-[#2B322B]">
+            {/* Họa tiết nụ sen & đường chỉ mảnh tinh tế phía trên tiêu đề */}
+            <svg
+              viewBox="0 0 64 28"
+              className="mb-3 h-6 w-14 text-[#6B7F6B]"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M2 18 H22 M42 18 H62" stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
+              <path
+                d="M32 4 C35.5 9.5, 36.5 16, 32 21 C27.5 16, 28.5 9.5, 32 4 Z"
+                stroke="currentColor"
+                strokeWidth="0.9"
+                fill="rgba(232,168,184,0.22)"
+              />
+              <path
+                d="M32 21 C26 19, 23 14.5, 25 10.5 C27.5 13, 29.5 17, 32 21 Z M32 21 C38 19, 41 14.5, 39 10.5 C36.5 13, 34.5 17, 32 21 Z"
+                stroke="currentColor"
+                strokeWidth="0.75"
+                opacity="0.85"
+              />
+            </svg>
+
+            <p className="font-serif-luxury text-[24px] tracking-[0.04em] text-[#2B322B]">
               Thư Mời Cưới
             </p>
-            <h1 className="font-handwritten-minimal mt-2.5 text-[33px] leading-[1.3] text-[#454D45] px-2">
+            <h1 className="font-handwritten-minimal mt-3 whitespace-nowrap text-[31px] sm:text-[34px] leading-[1.3] text-[#3F483F] px-1">
               {data.groom.shortName} &amp; {data.bride.shortName}
             </h1>
-            <div className="font-serif-luxury mt-3.5 text-[50px] font-normal leading-[1.03] tracking-[0.04em] text-[#222922] [font-variant-numeric:lining-nums]">
+
+            <div className="my-3.5 h-px w-16 bg-[#7A8C7A]/50" />
+
+            <div className="font-serif-luxury text-[54px] font-normal leading-[1.03] tracking-[0.05em] text-[#202720] [font-variant-numeric:lining-nums]">
               <div>{dayMonthDot}</div>
               <div>{mainYear}</div>
             </div>
+
+            <p className="font-serif-italic mt-3 text-[13.5px] tracking-[0.06em] text-[#667366]">
+              Trân trọng kính mời
+            </p>
           </motion.div>
 
-          {/* Khóm hoa sen màu nước hồng góc dưới phải (y hệt video 1) */}
+          {/* DUY NHẤT 1 KHÓM HOA SEN HỒNG LỚN Ở GÓC DƯỚI PHẢI — NỐI LIỀN MẠCH LÊN VAI PHẢI KHUNG VIỀN (KHÔNG LẶP!) */}
           <motion.img
             src={decorUrl('style8-lotus-cluster.jpg')}
             alt="Hoa sen Việt Nam"
-            initial={{ opacity: 0, y: 26, scale: 0.96 }}
+            initial={{ opacity: 0, y: 42, scale: 0.94 }}
             animate={{ opacity: 0.98, y: 0, scale: 1 }}
-            transition={{ duration: 1.25, delay: 0.15, ease: 'easeOut' }}
-            className="pointer-events-none absolute -bottom-2 -right-4 w-[78%] max-w-[335px] select-none mix-blend-multiply"
+            transition={{ duration: 2.35, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-none absolute -bottom-10 -right-2 z-20 w-[84%] max-w-[360px] select-none mix-blend-multiply"
           />
         </section>
 
         {/* ============================================================
-            PHẦN 2: HOA SEN TRÀN KHUNG + THÔNG TIN HAI HỌ & TÊN DÂU RỂ TRƯỢT 2 BÊN
+            PHẦN 2: KHUNG THÔNG TIN HAI HỌ & TÊN DÂU RỂ TRƯỢT CHẬM TỪ 2 BÊN (KHÔNG LẶP HOA BÊN PHẢI)
            ============================================================ */}
-        <section className="relative pt-36 pb-5">
-          {/* Cụm hoa sen vươn lên ngay trên vai phải khung viền — không che chữ NHÀ GÁI */}
-          <motion.img
-            src={decorUrl('style8-lotus-cluster.jpg')}
+        <section className="relative pt-10 pb-5">
+          {/* Lá sen nhạt trang trí đối trọng nhẹ phía mép trái ngoài khung */}
+          <img
+            src={decorUrl('style8-lotus-top-leaf.jpg')}
             alt=""
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 0.96, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.9 }}
-            className="pointer-events-none absolute -right-2 -top-2 z-20 w-[58%] max-w-[245px] select-none mix-blend-multiply"
+            className="pointer-events-none absolute -left-24 top-20 w-44 rotate-[18deg] opacity-[0.18] select-none mix-blend-multiply"
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.18 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 1.15, ease: 'easeOut' }}
           >
             <LotusNotchedFrame>
               {/* Hai họ Nhà Trai — Nhà Gái */}
@@ -345,22 +412,22 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
               </div>
 
               <motion.p
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.75, delay: 0.12 }}
+                transition={{ duration: 1.0, delay: 0.2 }}
                 className="font-serif-luxury mt-6 text-[16.5px] text-[#2E362E]"
               >
                 Trân Trọng Báo Tin Lễ Thành Hôn Của
               </motion.p>
 
-              {/* Animation đặc trưng video 1: Chú rể trượt từ TRÁI vào, Cô dâu trượt từ PHẢI vào */}
+              {/* Animation đặc trưng video 1: Chú rể trượt chậm từ TRÁI vào, Cô dâu trượt chậm từ PHẢI vào */}
               <div className="mt-5 flex flex-col items-center overflow-hidden">
                 <motion.h2
-                  initial={{ opacity: 0, x: -85 }}
+                  initial={{ opacity: 0, x: -90 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 1.55, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
                   className="font-handwritten-minimal text-[40px] leading-[1.2] text-[#404940]"
                 >
                   {data.groom.shortName}
@@ -369,16 +436,16 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
                   initial={{ opacity: 0, scale: 0.6 }}
                   whileInView={{ opacity: 0.75, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.25 }}
+                  transition={{ duration: 0.85, delay: 0.45 }}
                   className="font-serif-italic -my-1 text-[18px] text-[#4C554C]"
                 >
                   &amp;
                 </motion.span>
                 <motion.h2
-                  initial={{ opacity: 0, x: 85 }}
+                  initial={{ opacity: 0, x: 90 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 1.55, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   className="font-handwritten-minimal text-[40px] leading-[1.2] text-[#404940]"
                 >
                   {data.bride.shortName}
@@ -715,7 +782,14 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
         <div className="pointer-events-none fixed bottom-4 left-1/2 z-40 flex w-full max-w-[430px] -translate-x-1/2 items-center justify-between px-4">
           <button
             type="button"
-            onClick={onToggleMusic}
+            onClick={() => {
+              if (isMusicPlaying) {
+                userMutedManuallyRef.current = true;
+              } else {
+                userMutedManuallyRef.current = false;
+              }
+              onToggleMusic();
+            }}
             aria-label={isMusicPlaying ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
             className="pointer-events-auto cursor-pointer grid h-9 w-9 place-items-center rounded-full border border-[#242B24] bg-[#F6F5F0]/80 text-[#242B24] shadow-sm backdrop-blur-sm transition-transform hover:scale-105"
           >

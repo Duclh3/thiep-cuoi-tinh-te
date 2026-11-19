@@ -365,6 +365,14 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
+  // Tự động thử bật nhạc sau 1 giây khi vừa vào link (nếu trình duyệt cho phép; nếu bị chặn sẽ phát ngay khi chạm nơ mở thiệp)
+  useEffect(() => {
+    const autoTimer = window.setTimeout(() => {
+      onStartMusic();
+    }, 1000);
+    return () => window.clearTimeout(autoTimer);
+  }, [onStartMusic]);
+
   // Form RSVP
   const [guestInput, setGuestInput] = useState(() => getInitialGuestName(guestName));
   const [willAttend, setWillAttend] = useState<'yes' | 'no'>('yes');

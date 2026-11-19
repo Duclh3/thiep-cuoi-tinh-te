@@ -462,6 +462,13 @@ export function App() {
     });
   }, []);
 
+  // Đồng bộ trạng thái phát nhạc thực tế từ soundEngine (tránh lệch icon nếu trình duyệt chặn autoplay)
+  useEffect(() => {
+    return soundEngine.subscribe((st) => {
+      setIsMusicPlaying(st.isPlaying);
+    });
+  }, []);
+
   const handleToggleMusic = useCallback(() => {
     const playing = soundEngine.toggleMusic();
     setIsMusicPlaying(playing);
@@ -469,8 +476,9 @@ export function App() {
 
   const handleStartMusicIfNotPlaying = useCallback(() => {
     if (!soundEngine.getIsPlaying()) {
-      soundEngine.startMusic();
-      setIsMusicPlaying(true);
+      soundEngine.startMusic().then(() => {
+        setIsMusicPlaying(soundEngine.getIsPlaying());
+      });
     }
   }, []);
 
