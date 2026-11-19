@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const wishesFilePath = path.resolve(__dirname, 'data/wishes.json')
+const wishesDirPath = path.resolve(__dirname, 'data')
 
 export default defineConfig(({ command }) => ({
   base: process.env.VERCEL ? '/' : command === 'build' ? '/thiep-cuoi-long-huyen/' : '/',
@@ -23,8 +24,11 @@ export default defineConfig(({ command }) => ({
   },
   server: {
     watch: {
-      // Ngăn Vite tự động reload lại trang khi lưu lời chúc vào thư mục data/
-      ignored: ['**/data/**', '**/data/wishes.json'],
+      // Chỉ bỏ qua file JSON lưu lời chúc trong thư mục gốc data/, KHÔNG bỏ qua src/data/
+      ignored: [
+        `${wishesDirPath}/**`,
+        path.resolve(__dirname, 'promo-videos') + '/**',
+      ],
     },
   },
   plugins: [
@@ -39,10 +43,17 @@ export default defineConfig(({ command }) => ({
 
         server.middlewares.use('/api/wishes', (req, res) => {
           res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          const urlObj = new URL(req.url || '/', 'http://localhost')
+          const customer = urlObj.searchParams.get('customer')
+          const safeCustomer = customer ? customer.replace(/[^a-z0-9-]/gi, '') : ''
+          const targetFile = safeCustomer
+            ? path.resolve(__dirname, `data/wishes-${safeCustomer}.json`)
+            : wishesFilePath
+
           if (req.method === 'GET') {
             try {
-              const raw = fs.existsSync(wishesFilePath)
-                ? fs.readFileSync(wishesFilePath, 'utf-8')
+              const raw = fs.existsSync(targetFile)
+                ? fs.readFileSync(targetFile, 'utf-8')
                 : '[]'
               res.statusCode = 200
               res.end(raw)
@@ -61,12 +72,12 @@ export default defineConfig(({ command }) => ({
             req.on('end', () => {
               try {
                 const newWish = JSON.parse(body)
-                const current = fs.existsSync(wishesFilePath)
-                  ? JSON.parse(fs.readFileSync(wishesFilePath, 'utf-8'))
+                const current = fs.existsSync(targetFile)
+                  ? JSON.parse(fs.readFileSync(targetFile, 'utf-8'))
                   : []
                 const updated = [newWish, ...current]
-                fs.mkdirSync(path.dirname(wishesFilePath), { recursive: true })
-                fs.writeFileSync(wishesFilePath, JSON.stringify(updated, null, 2), 'utf-8')
+                fs.mkdirSync(path.dirname(targetFile), { recursive: true })
+                fs.writeFileSync(targetFile, JSON.stringify(updated, null, 2), 'utf-8')
                 res.statusCode = 200
                 res.end(JSON.stringify(updated))
               } catch {
@@ -80,6 +91,47 @@ export default defineConfig(({ command }) => ({
           res.statusCode = 405
           res.end(JSON.stringify({ error: 'Method not allowed' }))
         })
+      },
+    },
+    {
+      name: 'wedding-customer-routes-html',
+      closeBundle() {
+        const distDir = path.resolve(__dirname, 'dist')
+        const indexHtmlPath = path.join(distDir, 'index.html')
+        if (!fs.existsSync(indexHtmlPath)) return
+
+        const baseHtml = fs.readFileSync(indexHtmlPath, 'utf-8')
+        const ogImageUrl = process.env.VERCEL
+          ? 'https://thiep-cuoi-long-huyen-five.vercel.app/images/dang-dao/og-thumbnail.jpg'
+          : 'https://duclh3.github.io/thiep-cuoi-long-huyen/images/dang-dao/og-thumbnail.jpg'
+
+        const dangDaoHtml = baseHtml
+          .replaceAll(
+            'THƯ MỜI CƯỚI THÀNH LONG &amp; THANH HUYỀN',
+            'THƯ MỜI CƯỚI ĐOÀN HẢI ĐĂNG &amp; NGUYỄN ANH ĐÀO'
+          )
+          .replaceAll(
+            'Thiệp Mời Cưới Thành Long &amp; Thanh Huyền',
+            'Thiệp Mời Cưới Đoàn Hải Đăng &amp; Nguyễn Anh Đào'
+          )
+          .replaceAll(
+            'Thư mời cưới Thành Long &amp; Thanh Huyền — 28.11.2026',
+            'Thư mời cưới Đoàn Hải Đăng &amp; Nguyễn Anh Đào — 29.11.2026'
+          )
+          .replaceAll(
+            'Chúng mình sắp về chung một nhà! Sự hiện diện của bạn là niềm vinh dự lớn đối với gia đình và tụi mình...',
+            'Trân trọng kính mời bạn đến dự lễ thành hôn của Đoàn Hải Đăng &amp; Nguyễn Anh Đào — 29.11.2026.'
+          )
+          .replaceAll(
+            'https://duclh3.github.io/thiep-cuoi-long-huyen/images/og-thumbnail.jpg',
+            ogImageUrl
+          )
+
+        for (const routeDir of ['hai-dang-anh-dao', 'dang-dao']) {
+          const targetDir = path.join(distDir, routeDir)
+          fs.mkdirSync(targetDir, { recursive: true })
+          fs.writeFileSync(path.join(targetDir, 'index.html'), dangDaoHtml, 'utf-8')
+        }
       },
     },
   ],

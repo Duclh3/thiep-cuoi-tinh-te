@@ -27,10 +27,13 @@ interface AdminGuestModalProps {
   onAddWish: (wish: WishItem) => void;
   onUpdateWish: (wish: WishItem) => void;
   onDeleteWish: (id: string) => void;
+  adminPassword?: string;
+  authStorageKey?: string;
+  coupleLabel?: string;
 }
 
-const ADMIN_PASSWORD = 'huyducdeptrai';
-const AUTH_STORAGE_KEY = 'wedding_admin_auth_v1';
+const DEFAULT_ADMIN_PASSWORD = 'huyducdeptrai';
+const DEFAULT_AUTH_STORAGE_KEY = 'wedding_admin_auth_v1';
 
 export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
   isOpen,
@@ -39,11 +42,14 @@ export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
   onAddWish,
   onUpdateWish,
   onDeleteWish,
+  adminPassword = DEFAULT_ADMIN_PASSWORD,
+  authStorageKey = DEFAULT_AUTH_STORAGE_KEY,
+  coupleLabel = 'Thành Long & Thanh Huyền',
 }) => {
   // Trạng thái đăng nhập: Đọc từ sessionStorage
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+      return sessionStorage.getItem(authStorageKey) === 'true';
     }
     return false;
   });
@@ -112,10 +118,10 @@ export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
   // Xử lý đăng nhập
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput.trim() === ADMIN_PASSWORD) {
+    if (passwordInput.trim() === adminPassword) {
       setIsAuthenticated(true);
       setLoginError('');
-      sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+      sessionStorage.setItem(authStorageKey, 'true');
     } else {
       setLoginError('Mật khẩu quản trị chưa chính xác. Vui lòng thử lại!');
     }
@@ -125,7 +131,7 @@ export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPasswordInput('');
-    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(authStorageKey);
   };
 
   // Mở modal sửa
@@ -249,7 +255,7 @@ export const AdminGuestModal: React.FC<AdminGuestModalProps> = ({
                 </h3>
                 <p className="text-[11px] text-stone-400">
                   {isAuthenticated
-                    ? 'Thành Long & Mai Huyền • Bảng điều khiển Admin'
+                    ? `${coupleLabel} • Bảng điều khiển Admin`
                     : 'Khu vực quản trị dành riêng cho dâu rể'}
                 </p>
               </div>

@@ -1,5 +1,9 @@
 {
   "rewrites": [
+    { "source": "/hai-dang-anh-dao", "destination": "/hai-dang-anh-dao/index.html" },
+    { "source": "/hai-dang-anh-dao/", "destination": "/hai-dang-anh-dao/index.html" },
+    { "source": "/dang-dao", "destination": "/hai-dang-anh-dao/index.html" },
+    { "source": "/dang-dao/", "destination": "/hai-dang-anh-dao/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

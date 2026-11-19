@@ -1,38 +1,54 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const wishesFilePath = path.join(process.cwd(), 'data', 'wishes.json');
-let memoryWishes = null;
+const memoryWishesByCustomer = {};
 
-function loadWishes() {
-  if (memoryWishes) return memoryWishes;
+function getSafeCustomer(req) {
+  const urlObj = new URL(req.url || '/', 'http://localhost');
+  const raw = req.query?.customer ?? urlObj.searchParams.get('customer') ?? '';
+  const safe = String(raw).replace(/[^a-z0-9-]/gi, '').toLowerCase();
+  return safe || 'default';
+}
+
+function getWishesFilePath(customerKey) {
+  const fileName = customerKey === 'default' ? 'wishes.json' : `wishes-${customerKey}.json`;
+  return path.join(process.cwd(), 'data', fileName);
+}
+
+function loadWishes(customerKey) {
+  if (memoryWishesByCustomer[customerKey]) return memoryWishesByCustomer[customerKey];
+  const filePath = getWishesFilePath(customerKey);
   try {
-    if (fs.existsSync(wishesFilePath)) {
-      memoryWishes = JSON.parse(fs.readFileSync(wishesFilePath, 'utf-8'));
-      return memoryWishes;
+    if (fs.existsSync(filePath)) {
+      memoryWishesByCustomer[customerKey] = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      return memoryWishesByCustomer[customerKey];
     }
   } catch {
     // ignore
   }
-  memoryWishes = [];
-  return memoryWishes;
+  memoryWishesByCustomer[customerKey] = [];
+  return memoryWishesByCustomer[customerKey];
 }
 
 export default function handler(req, res) {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  const customerKey = getSafeCustomer(req);
+  const filePath = getWishesFilePath(customerKey);
+
   if (req.method === 'GET') {
-    return res.status(200).json(loadWishes());
+    return res.status(200).json(loadWishes(customerKey));
   }
   if (req.method === 'POST') {
     const wish = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const current = loadWishes();
-    memoryWishes = [wish, ...current];
+    const current = loadWishes(customerKey);
+    memoryWishesByCustomer[customerKey] = [wish, ...current];
     try {
-      fs.writeFileSync(wishesFilePath, JSON.stringify(memoryWishes, null, 2), 'utf-8');
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(memoryWishesByCustomer[customerKey], null, 2), 'utf-8');
     } catch {
-      // On read-only serverless container, memoryWishes + client storage keeps it alive
+      // On read-only serverless container, memoryWishesByCustomer + client storage keeps it alive
     }
-    return res.status(200).json(memoryWishes);
+    return res.status(200).json(memoryWishesByCustomer[customerKey]);
   }
   return res.status(405).json({ error: 'Method not allowed' });
 }

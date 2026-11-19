@@ -3,6 +3,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
+  DANG_DAO_WEDDING_DATA,
   DEFAULT_WEDDING_DATA,
   DUC_HAU_WEDDING_DATA,
   StyleId,
@@ -25,6 +26,7 @@ import { ConceptSwitcherDock } from './components/ConceptSwitcherDock';
 
 const ThreeWeddingScene = lazy(() => import('./components/ThreeWeddingScene'));
 const WhiteMinimalInvitation = lazy(() => import('./components/WhiteMinimalInvitation'));
+const DangDaoMinimalInvitation = lazy(() => import('./components/DangDaoMinimalInvitation'));
 const GardenEmeraldInvitation = lazy(() => import('./components/GardenEmeraldInvitation'));
 const BurgundyCallaInvitation = lazy(() => import('./components/BurgundyCallaInvitation'));
 const AdminGuestModal = lazy(() => import('./components/AdminGuestModal'));
@@ -32,6 +34,7 @@ const AdminGuestModal = lazy(() => import('./components/AdminGuestModal'));
 gsap.registerPlugin(ScrollTrigger);
 
 const WISHES_STORAGE_KEY = 'wedding_wishes_long_huyen_clean_v2';
+const DANG_DAO_WISHES_STORAGE_KEY = 'wedding_wishes_dang_dao_v1';
 
 function mergeUniqueWishes(...lists: WishItem[][]): WishItem[] {
   const seen = new Set<string>();
@@ -61,14 +64,32 @@ function mergeUniqueWishes(...lists: WishItem[][]): WishItem[] {
  * - /garden hoặc /khu-vuon -> garden (06. Khu Vườn Xanh Ngọc)
  * - /calla hoặc /calla-do -> calla (07. Mẫu Thiệp Calla Đỏ)
  */
-function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boolean } {
+function detectInitialRouteStyle(): {
+  style: StyleId;
+  isLockedSingleStyle: boolean;
+  isDangDaoProduct: boolean;
+} {
   if (typeof window === 'undefined') {
-    return { style: 'fairytale', isLockedSingleStyle: false };
+    return { style: 'fairytale', isLockedSingleStyle: false, isDangDaoProduct: false };
   }
 
   const pathname = window.location.pathname.toLowerCase();
   const params = new URLSearchParams(window.location.search);
   const queryStyle = params.get('style')?.toLowerCase();
+  const queryCustomer = params.get('customer')?.toLowerCase();
+
+  // Sản phẩm nhân bản từ Style 5 cho khách hàng Đoàn Hải Đăng & Nguyễn Anh Đào
+  if (
+    pathname.includes('/hai-dang-anh-dao') ||
+    pathname.includes('/dang-dao') ||
+    pathname.includes('/anh-dao-hai-dang') ||
+    queryStyle === 'dang-dao' ||
+    queryStyle === 'hai-dang-anh-dao' ||
+    queryCustomer === 'dang-dao' ||
+    queryCustomer === 'hai-dang-anh-dao'
+  ) {
+    return { style: 'minimal', isLockedSingleStyle: true, isDangDaoProduct: true };
+  }
 
   // Style 1: Fine Art
   if (
@@ -78,7 +99,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'fine-art' ||
     queryStyle === '1'
   ) {
-    return { style: 'fairytale', isLockedSingleStyle: true };
+    return { style: 'fairytale', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
   // Style 2: Vogue Editorial
@@ -90,7 +111,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'vogue' ||
     queryStyle === '2'
   ) {
-    return { style: 'editorial', isLockedSingleStyle: true };
+    return { style: 'editorial', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
   // Style 3: Starlight Cinematic
@@ -102,7 +123,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'starlight' ||
     queryStyle === '3'
   ) {
-    return { style: 'cinematic', isLockedSingleStyle: true };
+    return { style: 'cinematic', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
   // Style 4: Indochine Đông Dương
@@ -112,10 +133,10 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'indochine' ||
     queryStyle === '4'
   ) {
-    return { style: 'indochine', isLockedSingleStyle: true };
+    return { style: 'indochine', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
-  // Style 5: Minimal Tone Trắng
+  // Style 5: Minimal Tone Trắng (Template gốc Thành Long & Thanh Huyền)
   if (
     pathname.includes('/minimal') ||
     pathname.includes('/tone-trang') ||
@@ -124,7 +145,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'tone-trang' ||
     queryStyle === '5'
   ) {
-    return { style: 'minimal', isLockedSingleStyle: true };
+    return { style: 'minimal', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
   // Style 6: Forest Emerald Garden (Khu Vườn Xanh Ngọc)
@@ -137,7 +158,7 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'style-6' ||
     queryStyle === '6'
   ) {
-    return { style: 'garden', isLockedSingleStyle: true };
+    return { style: 'garden', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
   // Style 7: Burgundy Calla Lily (Mẫu Thiệp Calla Đỏ)
@@ -150,25 +171,31 @@ function detectInitialRouteStyle(): { style: StyleId; isLockedSingleStyle: boole
     queryStyle === 'style-7' ||
     queryStyle === '7'
   ) {
-    return { style: 'calla', isLockedSingleStyle: true };
+    return { style: 'calla', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
-  return { style: 'fairytale', isLockedSingleStyle: false };
+  return { style: 'fairytale', isLockedSingleStyle: false, isDangDaoProduct: false };
 }
 
 export function App() {
   const [routeConfig] = useState(detectInitialRouteStyle);
   const [styleId, setStyleId] = useState<StyleId>(routeConfig.style);
   const [isLockedSingleStyle] = useState<boolean>(routeConfig.isLockedSingleStyle);
+  const [isDangDaoProduct] = useState<boolean>(routeConfig.isDangDaoProduct);
   const [isGateOpen, setIsGateOpen] = useState<boolean>(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
   const [weddingData, setWeddingData] = useState<WeddingData>(() => {
+    if (routeConfig.isDangDaoProduct) {
+      return DANG_DAO_WEDDING_DATA;
+    }
     if (routeConfig.style === 'garden' || routeConfig.style === 'calla') {
       return DUC_HAU_WEDDING_DATA;
     }
     return DEFAULT_WEDDING_DATA;
   });
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+
+  const activeWishesStorageKey = isDangDaoProduct ? DANG_DAO_WISHES_STORAGE_KEY : WISHES_STORAGE_KEY;
 
   // Thanh tiến trình cuộn cập nhật trực tiếp qua GPU transform scaleX (0 React re-render khi cuộn)
   const progressBarRef = useRef<HTMLDivElement | null>(null);
@@ -179,7 +206,9 @@ export function App() {
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem('wedding_wishes_long_huyen_persistent_v1');
-        const raw = window.localStorage.getItem(WISHES_STORAGE_KEY);
+        const raw = window.localStorage.getItem(
+          routeConfig.isDangDaoProduct ? DANG_DAO_WISHES_STORAGE_KEY : WISHES_STORAGE_KEY
+        );
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
@@ -202,12 +231,21 @@ export function App() {
     return 'Bạn & Người Thương';
   });
 
-  // Giữ tiêu đề chuẩn Thành Long & Thanh Huyền trên tất cả các link đã deploy
+  // Cập nhật tiêu đề và bài hát nền theo sản phẩm khách hàng hoặc template gốc
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.title = 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
+      document.title = isDangDaoProduct
+        ? 'THƯ MỜI CƯỚI HẢI ĐĂNG & ANH ĐÀO'
+        : 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
     }
-  }, []);
+    if (isDangDaoProduct) {
+      soundEngine.setPreferredTrackId('ta-la-cua-nhau');
+    } else {
+      soundEngine.setPreferredTrackId(null);
+    }
+  }, [isDangDaoProduct]);
+
+  const activeCloudNamespace = isDangDaoProduct ? 'dd26' : 'lh26';
 
   // Tải ngầm các chunk khác khi rảnh nếu đang ở chế độ xem tất cả các style
   useEffect(() => {
@@ -220,17 +258,19 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [isLockedSingleStyle]);
 
-  // Đồng bộ lời chúc từ cả Cloud KV (cho GitHub Pages) và Local API (/api/wishes)
+  // Đồng bộ lời chúc theo namespace từng cặp đôi
+  const localWishesEndpoint = isDangDaoProduct ? '/api/wishes?customer=dang-dao' : '/api/wishes';
+
   useEffect(() => {
     let isMounted = true;
 
-    fetchCloudWishes()
+    fetchCloudWishes(activeCloudNamespace)
       .then((cloudList) => {
         if (!isMounted || cloudList.length === 0) return;
         setWishes((prev) => {
           const merged = mergeUniqueWishes(cloudList, prev);
           try {
-            window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(merged));
+            window.localStorage.setItem(activeWishesStorageKey, JSON.stringify(merged));
           } catch {
             // ignore
           }
@@ -239,14 +279,14 @@ export function App() {
       })
       .catch(() => {});
 
-    fetch('/api/wishes')
+    fetch(localWishesEndpoint)
       .then((res) => (res.ok ? res.json() : null))
       .then((serverWishes) => {
         if (!isMounted || !Array.isArray(serverWishes)) return;
         setWishes((prev) => {
           const merged = mergeUniqueWishes(prev, serverWishes);
           try {
-            window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(merged));
+            window.localStorage.setItem(activeWishesStorageKey, JSON.stringify(merged));
           } catch {
             // ignore
           }
@@ -258,13 +298,13 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeCloudNamespace, activeWishesStorageKey, localWishesEndpoint]);
 
   // Tự động kích hoạt nhạc ở cú chạm đầu tiên nếu trình duyệt chặn autoplay khi thiệp tự mở
   useEffect(() => {
     const unlockAudioOnFirstGesture = () => {
       if (!soundEngine.getIsPlaying()) {
-        soundEngine.startMusic(0);
+        soundEngine.startMusic();
         setIsMusicPlaying(true);
       }
       window.removeEventListener('pointerdown', unlockAudioOnFirstGesture);
@@ -366,7 +406,7 @@ export function App() {
     setIsGateOpen((prev) => {
       if (prev) return prev;
       soundEngine.playOpenChime();
-      soundEngine.startMusic(0);
+      soundEngine.startMusic();
       setIsMusicPlaying(true);
       setTimeout(() => {
         window.triggerWeddingFireworks?.(6);
@@ -382,7 +422,7 @@ export function App() {
 
   const handleStartMusicIfNotPlaying = useCallback(() => {
     if (!soundEngine.getIsPlaying()) {
-      soundEngine.startMusic(0);
+      soundEngine.startMusic();
       setIsMusicPlaying(true);
     }
   }, []);
@@ -396,54 +436,58 @@ export function App() {
     setWishes((prev) => {
       const updated = mergeUniqueWishes([newWish], prev);
       try {
-        window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(updated));
+        window.localStorage.setItem(activeWishesStorageKey, JSON.stringify(updated));
       } catch {
         // ignore
       }
       return updated;
     });
 
-    saveCloudWish(newWish).catch(() => {});
+    saveCloudWish(newWish, activeCloudNamespace).catch(() => {});
 
-    fetch('/api/wishes', {
+    fetch(localWishesEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newWish),
     }).catch(() => {});
-  }, []);
+  }, [activeCloudNamespace, activeWishesStorageKey, localWishesEndpoint]);
 
   // Cập nhật thông tin khách mời từ Admin (sửa tên, RSVP, lời chúc)
   const handleUpdateWish = useCallback((updatedWish: WishItem) => {
     setWishes((prev) => {
       const next = prev.map((w) => (w.id === updatedWish.id ? updatedWish : w));
       try {
-        window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(activeWishesStorageKey, JSON.stringify(next));
       } catch {
         // ignore
       }
       return next;
     });
-  }, []);
+  }, [activeWishesStorageKey]);
 
   // Xóa khách mời khỏi danh sách từ Admin
   const handleDeleteWish = useCallback((id: string) => {
     setWishes((prev) => {
       const next = prev.filter((w) => w.id !== id);
       try {
-        window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(activeWishesStorageKey, JSON.stringify(next));
       } catch {
         // ignore
       }
       return next;
     });
-  }, []);
+  }, [activeWishesStorageKey]);
 
   const handleResetDefault = useCallback(() => {
     setWeddingData(
-      styleId === 'garden' || styleId === 'calla' ? DUC_HAU_WEDDING_DATA : DEFAULT_WEDDING_DATA
+      isDangDaoProduct
+        ? DANG_DAO_WEDDING_DATA
+        : styleId === 'garden' || styleId === 'calla'
+        ? DUC_HAU_WEDDING_DATA
+        : DEFAULT_WEDDING_DATA
     );
     setGuestName('Bạn & Người Thương');
-  }, [styleId]);
+  }, [isDangDaoProduct, styleId]);
 
   const handleSelectStyle = useCallback((id: StyleId) => {
     setStyleId(id);
@@ -473,11 +517,11 @@ export function App() {
         />
       </div>
 
-      {/* PHONG CÁCH 05 (TONE TRẮNG MINIMAL) */}
+      {/* PHONG CÁCH 05 (TONE TRẮNG MINIMAL) HOẶC SẢN PHẨM NHÂN BẢN ĐOÀN HẢI ĐĂNG & NGUYỄN ANH ĐÀO */}
       {styleId === 'minimal' ? (
-        <>
+        isDangDaoProduct ? (
           <Suspense fallback={<div className="min-h-screen bg-[#FAF8F5]" />}>
-            <WhiteMinimalInvitation
+            <DangDaoMinimalInvitation
               data={weddingData}
               wishes={wishes}
               onAddWish={handleAddWish}
@@ -488,22 +532,37 @@ export function App() {
               onStartMusic={handleStartMusicIfNotPlaying}
             />
           </Suspense>
-          {!isLockedSingleStyle && (
-            <ConceptSwitcherDock
-              styleId={styleId}
-              onSelectStyle={handleSelectStyle}
-              isMusicPlaying={isMusicPlaying}
-              onToggleMusic={handleToggleMusic}
-              onReplayGate={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              data={weddingData}
-              onUpdateData={setWeddingData}
-              guestName={guestName}
-              onUpdateGuestName={setGuestName}
-              onResetDefault={handleResetDefault}
-              hideStyleSwitcher={isLockedSingleStyle}
-            />
-          )}
-        </>
+        ) : (
+          <>
+            <Suspense fallback={<div className="min-h-screen bg-[#FAF8F5]" />}>
+              <WhiteMinimalInvitation
+                data={weddingData}
+                wishes={wishes}
+                onAddWish={handleAddWish}
+                isMusicPlaying={isMusicPlaying}
+                onToggleMusic={handleToggleMusic}
+                guestName={guestName}
+                onOpenAdmin={handleOpenAdmin}
+                onStartMusic={handleStartMusicIfNotPlaying}
+              />
+            </Suspense>
+            {!isLockedSingleStyle && (
+              <ConceptSwitcherDock
+                styleId={styleId}
+                onSelectStyle={handleSelectStyle}
+                isMusicPlaying={isMusicPlaying}
+                onToggleMusic={handleToggleMusic}
+                onReplayGate={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                data={weddingData}
+                onUpdateData={setWeddingData}
+                guestName={guestName}
+                onUpdateGuestName={setGuestName}
+                onResetDefault={handleResetDefault}
+                hideStyleSwitcher={isLockedSingleStyle}
+              />
+            )}
+          </>
+        )
       ) : styleId === 'garden' ? (
         /* PHONG CÁCH 06: FOREST EMERALD GARDEN (VIDEO 1 - ĐỨC & HẬU) */
         <>
@@ -632,6 +691,9 @@ export function App() {
             onAddWish={handleAddWish}
             onUpdateWish={handleUpdateWish}
             onDeleteWish={handleDeleteWish}
+            adminPassword={isDangDaoProduct ? 'chucmunghanhphuc' : undefined}
+            authStorageKey={isDangDaoProduct ? 'wedding_admin_auth_dang_dao_v1' : undefined}
+            coupleLabel={isDangDaoProduct ? 'Đoàn Hải Đăng & Nguyễn Anh Đào' : undefined}
           />
         </Suspense>
       )}

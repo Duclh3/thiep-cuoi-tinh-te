@@ -39,6 +39,12 @@ export const WEDDING_PLAYLIST: SongTrack[] = [
     artist: '14 Casper & Bon Nghiêm',
     src: withBase('/music/mot-doi.mp3'),
   },
+  {
+    id: 'ta-la-cua-nhau',
+    title: 'Ta Là Của Nhau',
+    artist: 'Đông Nhi & Ông Cao Thắng',
+    src: withBase('/music/ta-la-cua-nhau.mp3'),
+  },
 ];
 
 type Listener = (state: { isPlaying: boolean; currentIndex: number; track: SongTrack }) => void;
@@ -46,18 +52,44 @@ type Listener = (state: { isPlaying: boolean; currentIndex: number; track: SongT
 class WeddingPlaylistEngine {
   private audio: HTMLAudioElement | null = null;
   private currentIndex = 0;
+  private preferredIndex: number | null = null;
   private isPlaying = false;
   private listeners: Set<Listener> = new Set();
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.audio = new Audio(WEDDING_PLAYLIST[0].src);
-      this.audio.preload = 'auto';
+      this.audio = new Audio();
+      this.audio.preload = 'none';
       this.audio.volume = 0.75;
 
       this.audio.addEventListener('ended', () => {
+        if (this.preferredIndex !== null && this.audio) {
+          this.audio.currentTime = 0;
+          this.audio.play().catch(() => {});
+          return;
+        }
         this.nextTrack(true);
       });
+    }
+  }
+
+  public setPreferredTrackId(trackId: string | null) {
+    if (!trackId) {
+      this.preferredIndex = null;
+      if (this.audio && !this.audio.src) {
+        this.audio.src = WEDDING_PLAYLIST[this.currentIndex].src;
+      }
+      return;
+    }
+    const idx = WEDDING_PLAYLIST.findIndex((t) => t.id === trackId);
+    if (idx !== -1) {
+      this.preferredIndex = idx;
+      this.currentIndex = idx;
+      if (this.audio) {
+        this.audio.src = WEDDING_PLAYLIST[idx].src;
+        this.audio.preload = 'metadata';
+      }
+      this.notify();
     }
   }
 
@@ -96,11 +128,23 @@ class WeddingPlaylistEngine {
 
   public async startMusic(index?: number) {
     if (!this.audio) return;
-    if (typeof index === 'number' && index >= 0 && index < WEDDING_PLAYLIST.length) {
-      if (this.currentIndex !== index) {
-        this.currentIndex = index;
-        this.audio.src = WEDDING_PLAYLIST[this.currentIndex].src;
+    const targetIdx =
+      this.preferredIndex !== null && (index === undefined || index === 0)
+        ? this.preferredIndex
+        : index !== undefined
+        ? index
+        : this.currentIndex;
+    if (typeof targetIdx === 'number' && targetIdx >= 0 && targetIdx < WEDDING_PLAYLIST.length) {
+      const targetSrc = WEDDING_PLAYLIST[targetIdx].src;
+      if (this.currentIndex !== targetIdx || !this.audio.src) {
+        this.currentIndex = targetIdx;
+        this.audio.src = targetSrc;
       }
+    }
+    if (!this.audio.paused) {
+      this.isPlaying = true;
+      this.notify();
+      return;
     }
     try {
       await this.audio.play();

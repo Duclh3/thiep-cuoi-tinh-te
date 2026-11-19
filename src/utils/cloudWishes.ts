@@ -44,12 +44,25 @@ async function kvSet(key: string, val: string): Promise<boolean> {
   }
 }
 
+function isLocalPreviewHost(): boolean {
+  if (typeof window === 'undefined') return true;
+  const host = window.location.hostname;
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.startsWith('192.168.') ||
+    host.startsWith('10.') ||
+    host.startsWith('100.')
+  );
+}
+
 /**
- * Đọc toàn bộ lời chúc đã lưu trên Cloud KV (phục vụ cho cả 4 link GitHub Pages)
+ * Đọc toàn bộ lời chúc đã lưu trên Cloud KV (tách namespace theo từng cặp đôi)
  */
-export async function fetchCloudWishes(): Promise<WishItem[]> {
+export async function fetchCloudWishes(namespace = 'lh26'): Promise<WishItem[]> {
+  if (isLocalPreviewHost()) return [];
   try {
-    const countStr = await kvGet('lh26_cnt');
+    const countStr = await kvGet(`${namespace}_cnt`);
     const count = countStr ? parseInt(countStr, 10) : 0;
     if (!count || isNaN(count) || count <= 0) return [];
 
@@ -60,15 +73,15 @@ export async function fetchCloudWishes(): Promise<WishItem[]> {
       promises.push(
         (async () => {
           const [n, m1, m2, t] = await Promise.all([
-            kvGet(`lh26_${i}_n`),
-            kvGet(`lh26_${i}_m1`),
-            kvGet(`lh26_${i}_m2`),
-            kvGet(`lh26_${i}_t`),
+            kvGet(`${namespace}_${i}_n`),
+            kvGet(`${namespace}_${i}_m1`),
+            kvGet(`${namespace}_${i}_m2`),
+            kvGet(`${namespace}_${i}_t`),
           ]);
           if (!n || !m1) return null;
           const fullB64Msg = m2 && m2 !== 'NONE' ? m1 + m2 : m1;
           return {
-            id: `cloud-wish-${i}`,
+            id: `cloud-wish-${namespace}-${i}`,
             name: fromBase64Url(n),
             message: fromBase64Url(fullB64Msg),
             createdAt: t ? fromBase64Url(t) : 'Hôm nay',
@@ -85,11 +98,12 @@ export async function fetchCloudWishes(): Promise<WishItem[]> {
 }
 
 /**
- * Lưu lời chúc mới lên Cloud KV để mọi người vào bất kỳ link nào trong 4 link đều thấy
+ * Lưu lời chúc mới lên Cloud KV theo namespace cặp đôi
  */
-export async function saveCloudWish(wish: WishItem): Promise<void> {
+export async function saveCloudWish(wish: WishItem, namespace = 'lh26'): Promise<void> {
+  if (isLocalPreviewHost()) return;
   try {
-    const countStr = await kvGet('lh26_cnt');
+    const countStr = await kvGet(`${namespace}_cnt`);
     const currentCount = countStr ? parseInt(countStr, 10) : 0;
     const nextIdx = (isNaN(currentCount) ? 0 : currentCount) + 1;
 
@@ -100,12 +114,12 @@ export async function saveCloudWish(wish: WishItem): Promise<void> {
     const timeB64 = toBase64Url(wish.createdAt.slice(0, 35));
 
     await Promise.all([
-      kvSet(`lh26_${nextIdx}_n`, nameB64),
-      kvSet(`lh26_${nextIdx}_m1`, part1),
-      kvSet(`lh26_${nextIdx}_m2`, part2),
-      kvSet(`lh26_${nextIdx}_t`, timeB64),
+      kvSet(`${namespace}_${nextIdx}_n`, nameB64),
+      kvSet(`${namespace}_${nextIdx}_m1`, part1),
+      kvSet(`${namespace}_${nextIdx}_m2`, part2),
+      kvSet(`${namespace}_${nextIdx}_t`, timeB64),
     ]);
-    await kvSet('lh26_cnt', String(nextIdx));
+    await kvSet(`${namespace}_cnt`, String(nextIdx));
   } catch {
     // Fallback localStorage vẫn hoạt động
   }
