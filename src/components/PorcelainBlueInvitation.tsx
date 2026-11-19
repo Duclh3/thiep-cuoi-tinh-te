@@ -249,6 +249,88 @@ const PorcelainRotatingGallery: React.FC<{
   );
 };
 
+const PorcelainHeroArtwork: React.FC<{
+  data: WeddingData;
+  textVisible: boolean;
+  compact?: boolean;
+  onScrollDown?: () => void;
+}> = ({ data, textVisible, compact = false, onScrollDown }) => {
+  const displayDate = data.weddingDate.displayDate.split('.').join(' · ');
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-5 py-12 text-center">
+      <img
+        src={decorUrl('style9-porcelain-hero-frame.jpg')}
+        alt={compact ? '' : 'Hoa xanh sứ trắng'}
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none mix-blend-multiply"
+      />
+
+      <div
+        className={`relative z-10 flex flex-col items-center justify-center bg-[#FAF5F4]/95 shadow-[0_6px_30px_rgba(24,44,82,0.08)] ${
+          compact
+            ? 'h-[48%] w-[50%] px-2 py-4'
+            : 'w-[66%] min-w-[238px] max-w-[268px] px-5 py-10'
+        }`}
+      >
+        <BaroqueInnerFrameSvg />
+
+        <motion.div
+          initial={false}
+          animate={{ opacity: textVisible ? 1 : 0, y: textVisible ? 0 : 8 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className="flex w-full flex-col items-center justify-center"
+        >
+          <p className={`${compact ? 'text-[5.5px]' : 'text-[10px]'} font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#7A8AA6]`}>
+            BẰNG TẤT CẢ YÊU THƯƠNG
+            <br />
+            TRÂN TRỌNG KÍNH MỜI
+          </p>
+
+          <h1 className={`font-porcelain-serif font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B] ${compact ? 'mt-2 text-[19px]' : 'mt-4 text-[42px]'}`}>
+            {data.groom.shortName}
+          </h1>
+
+          <span className={`font-handwritten-minimal text-[#667899] opacity-75 ${compact ? 'my-0 text-[10px]' : 'my-0.5 text-[21px]'}`}>
+            &amp;
+          </span>
+
+          <h1 className={`font-porcelain-serif font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B] ${compact ? 'text-[19px]' : 'text-[42px]'}`}>
+            {data.bride.shortName}
+          </h1>
+
+          <div className={`${compact ? 'my-1.5 w-7' : 'my-4 w-14'} h-px bg-[#C4CEDE]`} />
+
+          <p className={`font-porcelain-serif tracking-[0.2em] text-[#4C6289] ${compact ? 'text-[7px]' : 'text-[16px]'}`}>
+            {displayDate}
+          </p>
+
+          <p className={`font-handwritten-minimal text-[#6D7FA0] ${compact ? 'mt-0.5 text-[9px]' : 'mt-1.5 text-[21px]'}`}>
+            Hưng Yên · Việt Nam
+          </p>
+
+          {!compact && (
+            onScrollDown ? (
+              <button
+                type="button"
+                onClick={onScrollDown}
+                className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E] opacity-75"
+              >
+                <span>CUỘN XUỐNG</span>
+                <ChevronDown className="h-3 w-3 animate-bounce" />
+              </button>
+            ) : (
+              <div className="mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E] opacity-75">
+                <span>CUỘN XUỐNG</span>
+                <ChevronDown className="h-3 w-3 animate-bounce" />
+              </div>
+            )
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
 /**
  * Phong bì giấy kem 3 cánh gập (Trifold Gatefold) buộc nơ lụa bạc 3D — mở đúng 3 nhịp như video 2
  * 1) Chạm -> Nơ lụa bạc tháo lỏng và trượt rơi xuống
@@ -260,116 +342,105 @@ const PorcelainTrifoldEnvelope: React.FC<{
   onComplete: () => void;
 }> = ({ data, onComplete }) => {
   const [phase, setPhase] = useState<
-    'closed' | 'untying' | 'doors' | 'flaps' | 'zooming'
+    'closed' | 'untying' | 'doors' | 'flaps' | 'zooming' | 'revealing'
   >('closed');
+  const animationTimersRef = useRef<number[]>([]);
+
+  useEffect(
+    () => () => {
+      animationTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    []
+  );
+
+  const schedulePhase = (callback: () => void, delay: number) => {
+    animationTimersRef.current.push(window.setTimeout(callback, delay));
+  };
 
   const handleOpen = () => {
     if (phase !== 'closed') return;
     soundEngine.playOpenChime();
     setPhase('untying');
-    window.setTimeout(() => setPhase('doors'), 2350);
-    window.setTimeout(() => setPhase('flaps'), 4200);
-    window.setTimeout(() => setPhase('zooming'), 5700);
-    window.setTimeout(() => onComplete(), 7350);
+    schedulePhase(() => setPhase('doors'), 2750);
+    schedulePhase(() => setPhase('flaps'), 4850);
+    schedulePhase(() => setPhase('zooming'), 5800);
+    schedulePhase(() => setPhase('revealing'), 7000);
+    schedulePhase(() => onComplete(), 7700);
   };
 
+  const phaseOrder = ['closed', 'untying', 'doors', 'flaps', 'zooming', 'revealing'] as const;
+  const phaseIndex = phaseOrder.indexOf(phase);
   const isUntying = phase !== 'closed';
-  const areDoorsOpen = phase === 'doors' || phase === 'flaps' || phase === 'zooming';
-  const areFlapsOpen = phase === 'flaps' || phase === 'zooming';
-  const isZooming = phase === 'zooming';
+  const areDoorsOpen = phaseIndex >= phaseOrder.indexOf('doors');
+  const areFlapsOpen = phaseIndex >= phaseOrder.indexOf('flaps');
+  const isZooming = phaseIndex >= phaseOrder.indexOf('zooming');
+  const isRevealing = phase === 'revealing';
 
   return (
     <motion.div
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.18, ease: 'linear' }}
+      transition={{ duration: 0.1, ease: 'linear' }}
       onClick={handleOpen}
       className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#F3ECEA] select-none"
     >
+      {/* Chính bìa hoa này zoom thành trang đầu — không đổi sang một bản sao khác. */}
+      <motion.div
+        aria-hidden={!isZooming}
+        initial={false}
+        animate={
+          isZooming
+            ? { opacity: 1, scale: 1 }
+            : { opacity: 0, scale: 0.72 }
+        }
+        transition={
+          isZooming
+            ? { duration: 1.2, ease: [0.22, 1, 0.36, 1] }
+            : { duration: 0.1 }
+        }
+        className="pointer-events-none absolute left-1/2 top-0 z-10 h-[calc(100svh-46px)] w-full max-w-[430px] -translate-x-1/2 origin-center overflow-hidden"
+      >
+        <PorcelainHeroArtwork data={data} textVisible={isRevealing} />
+      </motion.div>
+
       <div className="relative flex h-full w-full max-w-[430px] items-center justify-center overflow-hidden px-4">
         {/* Khung phong bì đứng 3 cánh gập 3D */}
         <motion.div
-          animate={isZooming ? { scale: 1.65, opacity: 1 } : { scale: 1, opacity: 1 }}
-          transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
-          className="relative aspect-[9/14.2] w-full max-w-[355px] [perspective:1800px]"
+          initial={false}
+          animate={isZooming ? { opacity: 0 } : { opacity: 1 }}
+          transition={{ duration: 0.5, delay: isZooming ? 0.18 : 0, ease: 'easeOut' }}
+          className="relative z-20 aspect-[9/14.2] w-full max-w-[355px] [perspective:1800px]"
         >
         {/* THÂN PHONG BÌ TRONG (Đựng tấm thiệp hoa sứ xanh thực sự bên trong!) */}
         <div className="relative h-full w-full overflow-visible bg-[#EFE4D6]">
           {/* Nắp gập hình thang phía trên (mở bung ra sau khi cánh mở) */}
           <motion.div
-            animate={areFlapsOpen ? { rotateX: 118, y: -12, opacity: 0.12 } : { rotateX: 0, y: 0, opacity: 1 }}
-            transition={{ duration: 1.5, ease: [0.45, 0.05, 0.25, 1] }}
+            animate={areFlapsOpen ? { rotateX: 118, y: -12, opacity: 1 } : { rotateX: 0, y: 0, opacity: 1 }}
+            transition={{ duration: 0.95, ease: [0.45, 0.05, 0.25, 1] }}
             style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[11%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,88%_100%,12%_100%)]"
+            className="pointer-events-none absolute inset-x-0 top-0 z-30 h-[17%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,82%_100%,18%_100%)]"
           />
 
           {/* Nắp gập hình thang phía dưới */}
           <motion.div
-            animate={areFlapsOpen ? { rotateX: -118, y: 12, opacity: 0.12 } : { rotateX: 0, y: 0, opacity: 1 }}
-            transition={{ duration: 1.5, ease: [0.45, 0.05, 0.25, 1] }}
+            animate={areFlapsOpen ? { rotateX: -118, y: 12, opacity: 1 } : { rotateX: 0, y: 0, opacity: 1 }}
+            transition={{ duration: 0.95, delay: areFlapsOpen ? 0.08 : 0, ease: [0.45, 0.05, 0.25, 1] }}
             style={{ transformOrigin: 'bottom center', transformStyle: 'preserve-3d' }}
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[11%] bg-gradient-to-t from-[#E8DAC8] to-[#F4EBDE] [clip-path:polygon(12%_0,88%_0,100%_100%,0_100%)]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[12%] bg-gradient-to-t from-[#E8DAC8] to-[#F4EBDE] [clip-path:polygon(12%_0,88%_0,100%_100%,0_100%)]"
           />
 
           {/* TẤM THIỆP HOA XANH SỨ TRẮNG BÊN TRONG — LỘ RA NGAY KHI 2 CÁNH MỞ! */}
-          <motion.div
-            animate={isZooming ? { scale: 1.16 } : { scale: 1 }}
-            transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-[4.5%] z-10 overflow-hidden bg-[#FAF5F4]"
-          >
-            <motion.img
-              src={decorUrl('style9-porcelain-hero-frame.jpg')}
-              alt=""
-              animate={isZooming ? { scaleX: 0.88 } : { scaleX: 1 }}
-              transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full w-full object-cover mix-blend-multiply"
-            />
-            <div className="absolute inset-[27%_29%] bg-[#FAF5F4]/95">
-              <BaroqueInnerFrameSvg />
-              <motion.div
-                animate={isZooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-                transition={{ duration: 1.2, delay: 0.25 }}
-                className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#1D335B]"
-              >
-                <p className="text-[5.5px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#71819B]">
-                  BẰNG TẤT CẢ YÊU THƯƠNG
-                  <br />
-                  TRÂN TRỌNG KÍNH MỜI
-                </p>
-                <p className="font-porcelain-serif mt-2 text-[22px] leading-none">
-                  {data.groom.shortName}
-                </p>
-                <span className="font-handwritten-minimal my-0.5 text-[11px] text-[#71819B]">&amp;</span>
-                <p className="font-porcelain-serif text-[22px] leading-none">
-                  {data.bride.shortName}
-                </p>
-                <div className="my-2 h-px w-7 bg-[#C4CEDE]" />
-                <p className="font-porcelain-serif text-[8.5px] tracking-[0.2em]">
-                  {data.weddingDate.displayDate.split('.').join(' · ')}
-                </p>
-                <p className="font-handwritten-minimal mt-1 text-[11px] text-[#6D7FA0]">
-                  Hưng Yên · Việt Nam
-                </p>
-                <p className="mt-2.5 text-[5.5px] uppercase tracking-[0.22em] text-[#6E7F9E]">
-                  CUỘN XUỐNG
-                </p>
-              </motion.div>
-            </div>
-          </motion.div>
+          <div className="absolute inset-[4.5%] z-10 overflow-hidden bg-[#FAF5F4]">
+            <PorcelainHeroArtwork data={data} textVisible={false} compact />
+          </div>
 
           {/* CÁNH CỬA PHONG BÌ TRÁI (3D SWING LEFT — NẾP GẤP CHÉO KIM CƯƠNG Y HỆT VIDEO 2) */}
           <motion.div
             animate={
-              isZooming
-                ? {
-                    rotateY: -130,
-                    x: '-46%',
-                    opacity: 0,
-                  }
-                : areDoorsOpen
-                ? { rotateY: -130 }
+              areDoorsOpen
+                ? { rotateY: -110 }
                 : { rotateY: 0 }
             }
-            transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 2.1, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
@@ -401,17 +472,11 @@ const PorcelainTrifoldEnvelope: React.FC<{
           {/* CÁNH CỬA PHONG BÌ PHẢI (3D SWING RIGHT — CÓ VÂN LÁ DẬP CHÌM Y HỆT VIDEO 2) */}
           <motion.div
             animate={
-              isZooming
-                ? {
-                    rotateY: 130,
-                    x: '46%',
-                    opacity: 0,
-                  }
-                : areDoorsOpen
-                ? { rotateY: 130 }
+              areDoorsOpen
+                ? { rotateY: 110 }
                 : { rotateY: 0 }
             }
-            transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 2.1, delay: areDoorsOpen ? 0.12 : 0, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
@@ -448,8 +513,8 @@ const PorcelainTrifoldEnvelope: React.FC<{
 
           {/* Chữ dập chìm tinh tế phía trên nơ (mờ dần ngay khi mở) */}
           <motion.div
-            animate={areDoorsOpen ? { opacity: 0 } : { opacity: 0.62 }}
-            transition={{ duration: 0.55 }}
+            animate={isUntying ? { opacity: 0 } : { opacity: 0.62 }}
+            transition={{ duration: 0.3 }}
             className="pointer-events-none absolute inset-x-0 top-[15%] z-30 text-center"
           >
             <p className="font-handwritten-minimal text-[27px] text-[#8F7E6C]">
@@ -457,40 +522,88 @@ const PorcelainTrifoldEnvelope: React.FC<{
             </p>
           </motion.div>
 
-          {/* Dải lụa ngang thu về hai phía trước, sau đó nút nơ mới lỏng và rơi xuống như video */}
+          {/* Nơ nguyên vẹn trước khi chạm. Ảnh đã chứa cả dải lụa ngang thật. */}
           <motion.div
-            animate={isUntying ? { x: '-105%', opacity: 0 } : { x: 0, opacity: 1 }}
-            transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
-            className="pointer-events-none absolute left-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#D7D8DC] via-[#B8BAC1] to-[#D1D2D6]"
-          />
-          <motion.div
-            animate={isUntying ? { x: '105%', opacity: 0 } : { x: 0, opacity: 1 }}
-            transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
-            className="pointer-events-none absolute right-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#D7D8DC] via-[#B8BAC1] to-[#D1D2D6]"
-          />
-          <motion.div
-            animate={
-              isUntying
-                ? {
-                    y: [0, 10, 38, 225],
-                    scaleX: [1, 1.06, 0.82, 0.68],
-                    scaleY: [1, 1.08, 1.18, 0.94],
-                    rotate: [0, 0, -2, -7],
-                    opacity: [1, 1, 1, 0],
-                  }
-                : { y: 0, scaleX: [1, 1.018, 1], scaleY: 1, rotate: 0, opacity: 1 }
-            }
-            transition={
-              isUntying
-                ? { duration: 2.35, times: [0, 0.28, 0.58, 1], ease: [0.4, 0, 0.2, 1] }
-                : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }
-            }
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50 overflow-hidden"
+            animate={{ opacity: isUntying ? 0 : 1 }}
+            transition={{ duration: 0.12 }}
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
           >
             <img
               src={decorUrl('style9-silver-bow.png')}
               alt="Nơ lụa bạc"
-              className="w-full [clip-path:inset(0_25%_0_25%)]"
+              className="w-full"
+            />
+          </motion.div>
+
+          {/* Khi tháo, hai nửa nơ rũ xuống và rơi lệch nhau như vật thật trong video. */}
+          <motion.div
+            animate={
+              isUntying
+                ? {
+                    x: [0, -2, -9, -24, -42],
+                    y: [0, 5, 28, 135, 350],
+                    scaleX: [1, 1.03, 0.98, 0.86, 0.72],
+                    scaleY: [1, 1.08, 1.2, 1.06, 0.9],
+                    rotate: [0, -3, -12, -34, -52],
+                    opacity: [1, 1, 1, 0.82, 0],
+                  }
+                : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
+            }
+            transition={{ duration: 2.5, times: [0, 0.18, 0.42, 0.72, 1], ease: 'easeIn' }}
+            style={{ transformOrigin: '48% 36%' }}
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
+          >
+            <img
+              src={decorUrl('style9-silver-bow.png')}
+              alt=""
+              className="w-full [clip-path:inset(0_52%_0_0)]"
+            />
+          </motion.div>
+
+          <motion.div
+            animate={
+              isUntying
+                ? {
+                    x: [0, 3, 11, 27, 46],
+                    y: [0, 7, 34, 155, 365],
+                    scaleX: [1, 1.04, 0.97, 0.84, 0.7],
+                    scaleY: [1, 1.1, 1.22, 1.04, 0.88],
+                    rotate: [0, 4, 14, 36, 55],
+                    opacity: [1, 1, 1, 0.8, 0],
+                  }
+                : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
+            }
+            transition={{ duration: 2.55, times: [0, 0.18, 0.42, 0.72, 1], ease: 'easeIn' }}
+            style={{ transformOrigin: '52% 36%' }}
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
+          >
+            <img
+              src={decorUrl('style9-silver-bow.png')}
+              alt=""
+              className="w-full [clip-path:inset(0_0_0_52%)]"
+            />
+          </motion.div>
+
+          <motion.div
+            animate={
+              isUntying
+                ? {
+                    y: [0, 8, 38, 175, 355],
+                    scaleX: [1, 0.92, 0.74, 0.58, 0.45],
+                    scaleY: [1, 1.08, 1.28, 1.1, 0.88],
+                    rotate: [0, 1, -3, 7, 12],
+                    opacity: [1, 1, 0.95, 0.68, 0],
+                  }
+                : { y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
+            }
+            transition={{ duration: 2.5, times: [0, 0.18, 0.42, 0.72, 1], ease: 'easeIn' }}
+            style={{ transformOrigin: '50% 36%' }}
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
+          >
+            <img
+              src={decorUrl('style9-silver-bow.png')}
+              alt=""
+              className="w-full [clip-path:inset(20%_43%_34%_43%)]"
             />
           </motion.div>
 
@@ -789,58 +902,13 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
            ============================================================ */}
         <section
           id="s9-home"
-          className="relative flex min-h-[calc(100svh-46px)] items-center justify-center overflow-hidden px-5 py-12 text-center"
+          className="relative h-[calc(100svh-46px)] overflow-hidden"
         >
-          {/* Khung hoa mẫu đơn & hồng xanh sứ Delft phủ kín 4 viền */}
-          <img
-            src={decorUrl('style9-porcelain-hero-frame.jpg')}
-            alt="Hoa xanh sứ trắng"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none mix-blend-multiply"
+          <PorcelainHeroArtwork
+            data={data}
+            textVisible
+            onScrollDown={() => scrollToSection('s9-countdown')}
           />
-
-          {/* Tấm thẻ trung tâm có khung viền đôi hoa văn góc Baroque */}
-          <div
-            className="relative z-10 flex w-[66%] min-w-[238px] max-w-[268px] flex-col items-center justify-center bg-[#FAF5F4]/95 px-5 py-10 shadow-[0_6px_30px_rgba(24,44,82,0.08)]"
-          >
-            <BaroqueInnerFrameSvg />
-
-            <p className="text-[10px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#7A8AA6]">
-              BẰNG TẤT CẢ YÊU THƯƠNG
-              <br />
-              TRÂN TRỌNG KÍNH MỜI
-            </p>
-
-            <h1 className="font-porcelain-serif mt-4 text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]">
-              {data.groom.shortName}
-            </h1>
-
-            <span className="font-handwritten-minimal my-0.5 text-[21px] text-[#667899] opacity-75">
-              &amp;
-            </span>
-
-            <h1 className="font-porcelain-serif text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]">
-              {data.bride.shortName}
-            </h1>
-
-            <div className="my-4 h-px w-14 bg-[#C4CEDE]" />
-
-            <p className="font-porcelain-serif text-[16px] tracking-[0.2em] text-[#4C6289]">
-              {dottedDate}
-            </p>
-
-            <p className="font-handwritten-minimal mt-1.5 text-[21px] text-[#6D7FA0]">
-              Hưng Yên · Việt Nam
-            </p>
-
-            <button
-              type="button"
-              onClick={() => scrollToSection('s9-countdown')}
-              className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E] opacity-75"
-            >
-              <span>CUỘN XUỐNG</span>
-              <ChevronDown className="h-3 w-3 animate-bounce" />
-            </button>
-          </div>
         </section>
 
         {/* ============================================================

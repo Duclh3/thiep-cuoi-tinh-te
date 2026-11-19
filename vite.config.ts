@@ -146,7 +146,15 @@ export default defineConfig(({ command }) => ({
           )
           .replaceAll(
             'https://duclh3.github.io/thiep-cuoi-tinh-te/images/og-thumbnail.jpg',
-            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/duc-hau/couple-hero.jpg'
+            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/duc-hau/DSC_7927.jpg?og=20261119-2'
+          )
+          .replace(
+            'property="og:image:width" content="1200"',
+            'property="og:image:width" content="1440"'
+          )
+          .replace(
+            'property="og:image:height" content="630"',
+            'property="og:image:height" content="957"'
           )
 
         for (const routeDir of ['hai-dang-anh-dao', 'dang-dao']) {
