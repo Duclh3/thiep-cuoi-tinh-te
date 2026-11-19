@@ -524,9 +524,23 @@ const PorcelainTrifoldEnvelope: React.FC<{
 
           {/* Nơ nguyên vẹn trước khi chạm. Ảnh đã chứa cả dải lụa ngang thật. */}
           <motion.div
-            animate={{ opacity: isUntying ? 0 : 1 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
+            animate={
+              isUntying
+                ? {
+                    y: [0, 1, 6, 18, 32],
+                    scaleX: [1, 1, 1.01, 1, 0.98],
+                    scaleY: [1, 1.01, 1.04, 1.08, 1.12],
+                    opacity: [1, 1, 1, 1, 0],
+                  }
+                : { y: 0, scaleX: 1, scaleY: 1, opacity: 1 }
+            }
+            transition={{
+              duration: 1.45,
+              times: [0, 0.18, 0.45, 0.75, 1],
+              ease: [0.42, 0, 0.58, 1],
+            }}
+            style={{ transformOrigin: '50% 36%' }}
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
           >
             <img
               src={decorUrl('style9-silver-bow.png')}
@@ -540,16 +554,25 @@ const PorcelainTrifoldEnvelope: React.FC<{
             animate={
               isUntying
                 ? {
-                    x: [0, 0, -2, -8, -25],
-                    y: [0, 5, 24, 150, 360],
-                    scaleX: [1, 1.02, 0.98, 0.86, 0.72],
-                    scaleY: [1, 1.08, 1.22, 1.08, 0.9],
-                    rotate: [0, 0, -4, -22, -44],
-                    opacity: [1, 1, 1, 0.82, 0],
+                    x: [0, 0, 0, -2, -9, -24],
+                    y: [0, 2, 8, 32, 160, 380],
+                    scaleX: [1, 1.01, 1, 0.98, 0.84, 0.68],
+                    scaleY: [1, 1.02, 1.07, 1.15, 1.05, 0.86],
+                    rotate: [0, 0, 0, -3, -24, -48],
+                    opacity: [0, 0, 0, 0, 1, 0.78, 0],
                   }
                 : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
             }
-            transition={{ duration: 2.5, times: [0, 0.18, 0.42, 0.72, 1], ease: 'easeIn' }}
+            transition={{
+              duration: 2.55,
+              times: [0, 0.18, 0.43, 0.56, 0.76, 1],
+              ease: [0.42, 0, 0.58, 1],
+              opacity: {
+                duration: 2.55,
+                times: [0, 0.18, 0.43, 0.52, 0.58, 0.76, 1],
+                ease: [0.42, 0, 0.58, 1],
+              },
+            }}
             style={{ transformOrigin: '50% 36%' }}
             className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
           >
@@ -564,16 +587,25 @@ const PorcelainTrifoldEnvelope: React.FC<{
             animate={
               isUntying
                 ? {
-                    x: [0, 0, 2, 9, 28],
-                    y: [0, 7, 30, 165, 370],
-                    scaleX: [1, 1.03, 0.98, 0.85, 0.72],
-                    scaleY: [1, 1.1, 1.24, 1.06, 0.88],
-                    rotate: [0, 0, 5, 24, 46],
-                    opacity: [1, 1, 1, 0.8, 0],
+                    x: [0, 0, 0, 2, 10, 27],
+                    y: [0, 3, 10, 36, 172, 390],
+                    scaleX: [1, 1.01, 1, 0.98, 0.83, 0.68],
+                    scaleY: [1, 1.03, 1.08, 1.17, 1.03, 0.84],
+                    rotate: [0, 0, 0, 4, 26, 50],
+                    opacity: [0, 0, 0, 0, 1, 0.76, 0],
                   }
                 : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
             }
-            transition={{ duration: 2.55, times: [0, 0.18, 0.42, 0.72, 1], ease: 'easeIn' }}
+            transition={{
+              duration: 2.6,
+              times: [0, 0.18, 0.43, 0.56, 0.76, 1],
+              ease: [0.42, 0, 0.58, 1],
+              opacity: {
+                duration: 2.6,
+                times: [0, 0.18, 0.43, 0.52, 0.58, 0.76, 1],
+                ease: [0.42, 0, 0.58, 1],
+              },
+            }}
             style={{ transformOrigin: '50% 36%' }}
             className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
           >
