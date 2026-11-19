@@ -438,56 +438,71 @@ export const VideoReplicaInvitation: React.FC<VideoReplicaInvitationProps> = ({
       <MusicButton playing={isMusicPlaying} toggle={onToggleMusic} accent={accent} />
 
       <main className={`relative mx-auto min-h-screen w-full max-w-[480px] overflow-hidden shadow-[0_0_70px_rgba(25,40,45,0.16)] ${isLotus ? 'bg-[#fbfaf5] text-[#2e3c33]' : 'bg-[#fcfaf7] text-[#1a2c4a]'}`}>
-        {!isLotus && (
-          <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-[#173d78] px-4 text-white shadow-lg">
-            <span className="font-display-luxury text-sm tracking-[0.1em]">{data.groom.shortName} &amp; {data.bride.shortName}</span>
-            <button type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="Mở menu"><Menu className="h-5 w-5" /></button>
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.nav initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="absolute inset-x-0 top-full bg-[#173d78] px-6 pb-5 pt-2 text-xs shadow-xl">
-                  <button type="button" onClick={() => setMenuOpen(false)} className="absolute right-4 top-2"><X className="h-4 w-4" /></button>
-                  <div className="grid grid-cols-2 gap-3 pr-8">
-                    <a href="#events" onClick={() => setMenuOpen(false)}>Lịch trình</a>
-                    <a href="#gallery" onClick={() => setMenuOpen(false)}>Album ảnh</a>
-                    <a href="#rsvp" onClick={() => setMenuOpen(false)}>RSVP</a>
-                    <a href="#gift" onClick={() => setMenuOpen(false)}>Mừng cưới</a>
-                  </div>
-                </motion.nav>
-              )}
-            </AnimatePresence>
-          </header>
-        )}
-
         {isLotus ? (
           <>
-            <section className="relative flex min-h-[100svh] flex-col items-center justify-center px-8 pb-44 pt-24 text-center">
-              <div className="pointer-events-none absolute inset-0 opacity-45 [background-image:radial-gradient(#98ad9f_0.6px,transparent_0.6px)] [background-size:11px_11px]" />
+            {/* VIDEO 1 — màn mở đầu tối giản, hoa sen nằm sát đáy như bản mẫu */}
+            <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-8 pb-48 pt-20 text-center">
+              <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(#94a99a_0.55px,transparent_0.55px)] [background-size:13px_13px]" />
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 1 }} className="relative text-[10px] uppercase tracking-[0.34em] opacity-55">Thư mời cưới</motion.p>
-              <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.9 }} className="font-script-luxury relative mt-6 text-4xl" style={{ color: accent }}>Trân trọng kính mời</motion.p>
-              <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.9 }} className="font-display-luxury relative mt-4 text-4xl tracking-[0.08em]">{data.weddingDate.day}<span className="mx-2 text-xl opacity-35">/</span>03<span className="mx-2 text-xl opacity-35">/</span>2027</motion.h1>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ delay: 1.1 }} className="relative mt-5 text-[10px] uppercase tracking-[0.24em]">{guestName || 'Bạn & Người Thương'}</motion.p>
-              <motion.img initial={{ opacity: 0, y: 35 }} animate={{ opacity: 0.95, y: 0 }} transition={{ delay: 1, duration: 1.2 }} src={floral} alt="Hoa sen" className="pointer-events-none absolute inset-x-0 bottom-0 w-[125%] max-w-none -translate-x-[9%]" />
+              <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.9 }} className="font-script-luxury relative mt-5 text-4xl" style={{ color: accent }}>Trân trọng kính mời</motion.p>
+              <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.9 }} className="font-display-luxury relative mt-4 text-[2.55rem] tracking-[0.09em]">{data.weddingDate.day}<span className="mx-2 text-lg opacity-30">.</span>03<span className="mx-2 text-lg opacity-30">.</span>2027</motion.h1>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.58 }} transition={{ delay: 1.1 }} className="relative mt-5 text-[9px] uppercase tracking-[0.25em]">{guestName || 'Bạn & Người Thương'}</motion.p>
+              <motion.img initial={{ opacity: 0, y: 38 }} animate={{ opacity: 0.96, y: 0 }} transition={{ delay: 0.9, duration: 1.2 }} src={floral} alt="Hoa sen" className="pointer-events-none absolute bottom-[-1px] left-1/2 w-[132%] max-w-none -translate-x-1/2" />
             </section>
-            <div className="space-y-16 pb-10">
-              <FamilyIntro data={data} accent={accent} />
-              <CouplePhoto data={data} />
-              <motion.section {...fadeUp} className="relative px-8 py-12 text-center">
-                <img src={floral} alt="" className="pointer-events-none absolute -right-16 bottom-0 w-72 opacity-35" />
-                <p className="text-[9px] uppercase tracking-[0.27em] opacity-50">Save the date</p>
-                <h2 className="font-display-luxury mt-3 text-4xl" style={{ color: accent }}>{data.weddingDate.displayDate}</h2>
-                <p className="mt-4 text-xs">{data.weddingDate.dayOfWeek} • {data.weddingDate.lunarDate}</p>
-                <a href={calendarUrl} target="_blank" rel="noreferrer" className="relative mt-6 inline-flex items-center gap-2 border px-5 py-2 text-[10px] uppercase tracking-[0.16em]" style={{ borderColor: accent, color: accent }}><CalendarDays className="h-3.5 w-3.5" /> Thêm vào lịch</a>
+            <div className="pb-8">
+              {/* Cụm sen + khung thông tin hai gia đình đúng thứ tự video */}
+              <motion.section {...fadeUp} className="relative px-5 pb-8 pt-28 text-center">
+                <img src={floral} alt="" className="pointer-events-none absolute -right-20 -top-4 z-10 w-[115%] max-w-none opacity-95" />
+                <div className="relative border border-[#78927f] px-5 pb-12 pt-24">
+                  <div className="pointer-events-none absolute inset-[5px] rounded-[24px] border border-[#78927f]/45" />
+                  <div className="relative grid grid-cols-2 gap-5 text-[9px] leading-4">
+                    <div><p className="mb-2 font-semibold tracking-[0.2em]">NHÀ TRAI</p><p>Ông {data.groom.fatherName}</p><p>Bà {data.groom.motherName}</p></div>
+                    <div><p className="mb-2 font-semibold tracking-[0.2em]">NHÀ GÁI</p><p>Ông {data.bride.fatherName}</p><p>Bà {data.bride.motherName}</p></div>
+                  </div>
+                  <p className="relative mt-7 text-[9px] uppercase tracking-[0.22em] opacity-60">Trân trọng báo tin lễ thành hôn của</p>
+                  <h2 className="font-script-luxury relative mt-4 text-4xl" style={{ color: accent }}>{data.groom.shortName}</h2>
+                  <p className="font-serif-italic relative -my-1 text-sm opacity-55">&amp;</p>
+                  <h2 className="font-script-luxury relative text-4xl" style={{ color: accent }}>{data.bride.shortName}</h2>
+                </div>
               </motion.section>
-              <Countdown isoDate={data.weddingDate.isoDate} accent={accent} />
-              <div id="events"><EventCards data={data} accent={accent} /></div>
-              <div id="rsvp"><RsvpSection data={data} wishes={wishes} onAddWish={onAddWish} accent={accent} guestName={guestName} /></div>
-              <div id="gift"><GiftSection data={data} accent={accent} /></div>
-              <div id="gallery"><Gallery data={data} accent={accent} /></div>
+
+              {/* Ảnh đôi duy nhất ở phần thiệp chính, mép dưới tan trắng giống video */}
+              <motion.section {...fadeUp} className="relative mx-5 -mt-1 overflow-hidden">
+                <img src={data.sectionImages.hero} alt={`${data.groom.shortName} và ${data.bride.shortName}`} className="aspect-[4/3] w-full object-cover object-center" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#fbfaf5] to-transparent" />
+              </motion.section>
+              <motion.div {...fadeUp} className="px-7 pb-10 pt-2 text-center">
+                <p className="font-serif-italic text-[11px] tracking-[0.16em]">THE WEDDING DAY</p>
+                <p className="mt-1 text-[9px] tracking-[0.2em] opacity-55">{data.groom.fullName} &amp; {data.bride.fullName}</p>
+              </motion.div>
+
+              {/* Hai nghi lễ hiển thị dạng typography liền mạch, không dùng card */}
+              <section id="events" className="relative px-8 pb-8 text-center">
+                {data.partyEvents.map((event, index) => (
+                  <motion.div key={event.id} {...fadeUp} className="mb-9">
+                    <h3 className="font-condensed-minimal text-lg font-medium uppercase tracking-[0.08em]">{index === 0 ? 'LỄ VU QUY' : 'TIỆC MỪNG LỄ THÀNH HÔN'}</h3>
+                    <p className="mt-2 text-[10px]">{event.timeText}</p>
+                    <p className="font-display-luxury mt-1 text-xl tracking-[0.08em]">{event.dayMonth.replace('/', '.')}<span className="mx-2 opacity-30">•</span>{event.year}</p>
+                    <p className="mt-2 text-[9px] italic opacity-55">{event.lunarText}</p>
+                    <p className="mx-auto mt-3 max-w-xs text-[10px] leading-5">{event.address}</p>
+                    <a href={event.mapUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#263e30] px-5 py-2 text-[9px] uppercase tracking-[0.12em] text-white"><MapPin className="h-3 w-3" /> Xem chỉ đường</a>
+                  </motion.div>
+                ))}
+                <img src={floral} alt="" className="pointer-events-none absolute -right-28 top-20 w-72 opacity-25" />
+                <iframe title="Bản đồ lễ cưới" src={`https://maps.google.com/maps?q=${encodeURIComponent(data.partyEvents[0]?.address || '')}&z=14&output=embed`} className="relative h-56 w-full border-4 border-white shadow-md" loading="lazy" />
+              </section>
+
+              {/* Thanh xanh + form RSVP theo đúng video */}
+              <div className="mt-2 bg-[#213b2a] px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white">✉ &nbsp; Xác nhận tham dự lễ cưới</div>
+              <div id="rsvp" className="pt-7"><RsvpSection data={data} wishes={wishes} onAddWish={onAddWish} accent={accent} guestName={guestName} /></div>
+              <div id="gift" className="pt-8"><GiftSection data={data} accent={accent} /></div>
+              <div id="gallery" className="pt-14"><Gallery data={data} accent={accent} /></div>
               <Closing data={data} accent={accent} floral={floral} />
             </div>
           </>
         ) : (
-          <div className="space-y-16 pb-8">
+          <div className="pb-8">
+            {/* VIDEO 2 — bìa hoa xanh trước, thanh navy chỉ xuất hiện khi bắt đầu cuộn */}
             <section className="relative flex min-h-[calc(100svh-3.5rem)] items-center justify-center overflow-hidden px-8 py-20 text-center">
               <img src={floral} alt="Hoa xanh porcelain" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-95" />
               <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25, duration: 0.9 }} className="relative z-10 border border-[#9eb2d2] bg-[#fffdfa]/85 px-8 py-12 shadow-[0_15px_45px_rgba(19,55,108,0.16)] backdrop-blur-[2px]">
@@ -499,38 +514,60 @@ export const VideoReplicaInvitation: React.FC<VideoReplicaInvitationProps> = ({
                 <p className="text-xs tracking-[0.22em] text-[#173d78]">{data.weddingDate.displayDate}</p>
               </motion.div>
             </section>
-            <motion.section {...fadeUp} className="px-8 text-center">
-              <p className="text-[9px] uppercase tracking-[0.28em] opacity-50">We are getting married</p>
-              <h2 className="font-display-luxury mt-3 text-4xl" style={{ color: accent }}>Save the date</h2>
-              <p className="mt-4 text-xs leading-6">{data.weddingDate.heroSubHeadline}</p>
-              <div className="mt-8"><Countdown isoDate={data.weddingDate.isoDate} accent={accent} /></div>
+
+            <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-[#173d78] px-4 text-white shadow-lg">
+              <span className="font-display-luxury text-xs tracking-[0.14em]">HĐ &amp; PH</span>
+              <button type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="Mở menu"><Menu className="h-5 w-5" /></button>
+              <AnimatePresence>{menuOpen && <motion.nav initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="absolute inset-x-0 top-full bg-[#173d78] px-6 pb-5 pt-3 text-[10px] uppercase tracking-[0.12em] shadow-xl"><button type="button" onClick={() => setMenuOpen(false)} className="absolute right-4 top-3"><X className="h-4 w-4" /></button><div className="grid grid-cols-2 gap-3 pr-8"><a href="#locations" onClick={() => setMenuOpen(false)}>Locations</a><a href="#the-day" onClick={() => setMenuOpen(false)}>The day</a><a href="#gift" onClick={() => setMenuOpen(false)}>Gift list</a><a href="#rsvp" onClick={() => setMenuOpen(false)}>RSVP</a></div></motion.nav>}</AnimatePresence>
+            </header>
+
+            <div className="h-40 overflow-hidden"><img src={floral} alt="" className="h-[430px] w-full object-cover object-top" /></div>
+            <motion.section {...fadeUp} className="px-8 pb-16 pt-14 text-center">
+              <p className="font-serif-italic text-sm opacity-65">Forever begins now</p>
+              <div className="mt-9"><Countdown isoDate={data.weddingDate.isoDate} accent={accent} /></div>
+              <div className="mx-auto mt-12 h-px w-12 bg-[#93a9c9]" />
+              <p className="font-display-luxury mt-9 text-3xl tracking-[0.1em]" style={{ color: accent }}>{data.weddingDate.displayDate}</p>
+              <p className="mt-3 text-[10px] uppercase tracking-[0.18em] opacity-55">{data.weddingDate.dayOfWeek} • {data.weddingDate.lunarDate}</p>
             </motion.section>
-            <FamilyIntro data={data} accent={accent} />
-            <CouplePhoto data={data} rounded />
-            <motion.section {...fadeUp} className="relative overflow-hidden px-8 py-10 text-center">
-              <img src={floral} alt="" className="pointer-events-none absolute -left-12 -top-16 h-52 w-36 object-cover object-left-top opacity-35" />
-              <p className="text-[9px] uppercase tracking-[0.25em] opacity-50">The celebration</p>
-              <h2 className="font-display-luxury mt-2 text-3xl" style={{ color: accent }}>Wedding timeline</h2>
-              <div className="mx-auto mt-8 grid max-w-sm grid-cols-4 gap-2">
-                {['Đón khách', 'Làm lễ', 'Khai tiệc', 'Chụp hình'].map((item, index) => (
-                  <div key={item} className="text-center">
-                    <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border text-xs" style={{ borderColor: accent, color: accent }}>{['10:30', '11:00', '11:30', '13:00'][index]}</div>
-                    <p className="mt-2 text-[8px] uppercase tracking-wide">{item}</p>
-                  </div>
-                ))}
+
+            {/* Locations: chữ + bản đồ xen kẽ giống video */}
+            <motion.section id="locations" {...fadeUp} className="relative px-7 pb-14 pt-6 text-left">
+              <img src={floral} alt="" className="pointer-events-none absolute -left-24 -top-20 h-52 w-48 object-cover object-left-top opacity-35" />
+              <p className="text-center text-[9px] uppercase tracking-[0.3em] opacity-45">Our wedding</p>
+              <h2 className="font-display-luxury mt-2 text-center text-3xl" style={{ color: accent }}>Locations</h2>
+              <div className="mt-12 space-y-12">
+                {data.partyEvents.map((event) => <div key={event.id}><p className="font-serif-italic text-[11px] opacity-50">{event.timeText}</p><h3 className="font-display-luxury mt-1 text-xl" style={{ color: accent }}>{event.title}</h3><p className="mt-2 text-[10px] leading-5 opacity-65">{event.address}</p><iframe title={`Bản đồ ${event.title}`} src={`https://maps.google.com/maps?q=${encodeURIComponent(event.address)}&z=13&output=embed`} className="mt-4 h-48 w-full border-0" loading="lazy" /></div>)}
               </div>
             </motion.section>
-            <div id="events"><EventCards data={data} accent={accent} porcelain /></div>
-            <motion.section {...fadeUp} className="px-7 text-center">
-              <p className="text-[9px] uppercase tracking-[0.28em] opacity-50">Dress code</p>
-              <h2 className="font-display-luxury mt-2 text-3xl" style={{ color: accent }}>Formal elegance</h2>
-              <p className="mx-auto mt-3 max-w-xs text-[11px] leading-5 opacity-60">Sự hiện diện thanh lịch của bạn sẽ làm ngày vui của chúng mình thêm trọn vẹn.</p>
-              <div className="mt-6 flex justify-center gap-3">{['#173d78', '#8ba4cb', '#d6d2c8', '#22252a'].map((color) => <span key={color} className="h-9 w-9 rounded-full border-4 border-white shadow-md" style={{ backgroundColor: color }} />)}</div>
+
+            {/* The Day: timeline dọc, khoảng trắng và hoa góc theo video */}
+            <motion.section id="the-day" {...fadeUp} className="relative px-8 py-16 text-center">
+              <img src={floral} alt="" className="pointer-events-none absolute -bottom-20 -left-24 h-64 w-64 object-cover object-left-bottom opacity-45" />
+              <p className="text-[9px] uppercase tracking-[0.3em] opacity-45">The celebration</p>
+              <h2 className="font-display-luxury mt-2 text-4xl" style={{ color: accent }}>The Day</h2>
+              <div className="mx-auto mt-12 max-w-xs space-y-9 border-l border-[#9eb2d2] pl-7 text-left">
+                {[['10:30', 'Đón khách'], ['11:00', 'Lễ thành hôn'], ['11:30', 'Khai tiệc'], ['13:00', 'Chụp hình & chúc mừng']].map(([time, title]) => <div key={title} className="relative"><span className="absolute -left-[31px] top-1 h-2 w-2 rounded-full bg-[#173d78]" /><p className="text-[9px] tracking-[0.2em] opacity-50">{time}</p><p className="font-display-luxury mt-1 text-xl">{title}</p></div>)}
+              </div>
             </motion.section>
-            <div id="gift"><GiftSection data={data} accent={accent} /></div>
-            <div id="rsvp"><RsvpSection data={data} wishes={wishes} onAddWish={onAddWish} accent={accent} guestName={guestName} /></div>
-            <div id="gallery"><Gallery data={data} accent={accent} /></div>
-            <Closing data={data} accent={accent} floral={floral} />
+
+            <motion.section {...fadeUp} className="relative overflow-hidden px-8 py-16 text-left">
+              <img src={floral} alt="" className="pointer-events-none absolute -right-24 -top-20 h-52 w-52 object-cover object-right-top opacity-35" />
+              <p className="text-[9px] uppercase tracking-[0.28em] opacity-45">Dress code</p>
+              <h2 className="font-display-luxury mt-2 text-4xl leading-none" style={{ color: accent }}>Formal<br />elegance</h2>
+              <p className="mt-5 max-w-xs text-[10px] leading-5 opacity-60">Trang phục lịch sự với các gam màu xanh, kem và đen sẽ làm ngày vui thêm trọn vẹn.</p>
+              <div className="mt-7 flex gap-3">{['#173d78', '#8ba4cb', '#e7e2d8', '#26292e'].map((color) => <span key={color} className="h-8 w-8 rounded-full border-4 border-white shadow-md" style={{ backgroundColor: color }} />)}</div>
+            </motion.section>
+
+            <div id="gift" className="relative py-12"><img src={floral} alt="" className="pointer-events-none absolute -left-28 -top-16 h-64 w-64 object-cover object-left-top opacity-45" /><GiftSection data={data} accent={accent} /></div>
+            <div id="rsvp" className="py-12"><RsvpSection data={data} wishes={wishes} onAddWish={onAddWish} accent={accent} guestName={guestName} /></div>
+
+            <motion.section {...fadeUp} className="px-8 py-14 text-left">
+              <p className="text-[9px] uppercase tracking-[0.28em] opacity-45">Helpful details</p>
+              <h2 className="font-display-luxury mt-2 text-3xl" style={{ color: accent }}>Stay &amp; travel</h2>
+              <div className="mt-8 space-y-7 text-[10px] leading-5 opacity-65"><div><p className="font-display-luxury text-lg opacity-100">Hotels nearby</p><p>Chúng mình đã chuẩn bị một số gợi ý lưu trú thuận tiện gần địa điểm tổ chức.</p></div><div><p className="font-display-luxury text-lg opacity-100">Need a ride?</p><p>Hãy liên hệ với gia đình nếu bạn cần hỗ trợ di chuyển trong ngày cưới.</p></div><div><p className="font-display-luxury text-lg opacity-100">Questions &amp; answers</p><p>Mọi thông tin cần thiết đều có trong thiệp; chúng mình luôn sẵn lòng hỗ trợ bạn.</p></div></div>
+            </motion.section>
+
+            <motion.footer {...fadeUp} className="relative overflow-hidden px-8 pb-28 pt-20 text-center"><p className="text-[9px] uppercase tracking-[0.3em] opacity-45">Thank you</p><p className="font-serif-italic mt-4 text-sm opacity-55">With love</p><h2 className="font-display-luxury mt-5 text-4xl" style={{ color: accent }}>{data.groom.shortName}<br />&amp; {data.bride.shortName}</h2><img src={floral} alt="" className="pointer-events-none absolute -bottom-32 left-1/2 h-72 w-72 -translate-x-1/2 object-cover object-bottom opacity-25" /></motion.footer>
           </div>
         )}
       </main>
