@@ -8,7 +8,7 @@ const wishesFilePath = path.resolve(__dirname, 'data/wishes.json')
 const wishesDirPath = path.resolve(__dirname, 'data')
 
 export default defineConfig(({ command }) => ({
-  base: process.env.VERCEL ? '/' : command === 'build' ? '/thiep-cuoi-long-huyen/' : '/',
+  base: process.env.VERCEL ? '/' : command === 'build' ? '/thiep-cuoi-tinh-te/' : '/',
   build: {
     target: 'es2020',
     cssCodeSplit: true,
@@ -103,7 +103,7 @@ export default defineConfig(({ command }) => ({
         const baseHtml = fs.readFileSync(indexHtmlPath, 'utf-8')
         const ogImageUrl = process.env.VERCEL
           ? 'https://thiep-cuoi-tinh-te.vercel.app/images/dang-dao/og-thumbnail.jpg'
-          : 'https://duclh3.github.io/thiep-cuoi-long-huyen/images/dang-dao/og-thumbnail.jpg'
+          : 'https://duclh3.github.io/thiep-cuoi-tinh-te/images/dang-dao/og-thumbnail.jpg'
 
         const dangDaoHtml = baseHtml
           .replaceAll(
@@ -123,7 +123,7 @@ export default defineConfig(({ command }) => ({
             'Trân trọng kính mời bạn đến dự lễ thành hôn của Đoàn Hải Đăng &amp; Nguyễn Anh Đào — 29.11.2026.'
           )
           .replaceAll(
-            'https://duclh3.github.io/thiep-cuoi-long-huyen/images/og-thumbnail.jpg',
+            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/og-thumbnail.jpg',
             ogImageUrl
           )
 
