@@ -1,4 +1,13 @@
-export type StyleId = 'fairytale' | 'editorial' | 'cinematic' | 'indochine' | 'minimal' | 'garden' | 'calla';
+export type StyleId =
+  | 'fairytale'
+  | 'editorial'
+  | 'cinematic'
+  | 'indochine'
+  | 'minimal'
+  | 'garden'
+  | 'calla'
+  | 'lotus'
+  | 'porcelain';
 
 export interface ThemeConfig {
   id: StyleId;
@@ -192,6 +201,54 @@ export const THEMES: Record<StyleId, ThemeConfig> = {
     accentHex: '#7D1E3A',
     secondaryHex: '#D4AF37',
     confettiColors: ['#7D1E3A', '#A33353', '#F9E2EB', '#D4AF37'],
+    isDark: false,
+  },
+  lotus: {
+    id: 'lotus',
+    code: '08',
+    name: 'Vietnamese Lotus Poetry',
+    vietnameseName: 'Thiệp Hoa Sen Việt',
+    tagline: 'Sen hồng thủy mặc • Nền giấy ngà • Tinh thần Việt Nam',
+    badgeText: 'THƯ MỜI CƯỚI • 03.03.2027',
+    gateTitle: 'Thiệp Mời',
+    gateActionText: 'Khám phá thiệp sen...',
+    bgPrimary: 'bg-[#F8F7F1]',
+    bgSecondary: 'bg-[#EEF2EB]',
+    bgCard: 'bg-[#FBFAF5]',
+    textPrimary: 'text-[#2E3C33]',
+    textSecondary: 'text-[#647268]',
+    textAccent: 'text-[#315B45]',
+    borderSubtle: 'border-[#DCE5DA]',
+    borderAccent: 'border-[#9CB5A2]',
+    btnPrimary: 'bg-[#315B45] text-white hover:bg-[#254A37] shadow-md',
+    btnSecondary: 'border border-[#315B45] text-[#315B45] hover:bg-[#315B45] hover:text-white',
+    accentHex: '#315B45',
+    secondaryHex: '#D68FA0',
+    confettiColors: ['#315B45', '#D68FA0', '#F6D7DE', '#FDFBF7'],
+    isDark: false,
+  },
+  porcelain: {
+    id: 'porcelain',
+    code: '09',
+    name: 'Porcelain Blue Garden',
+    vietnameseName: 'Hoa Xanh Sứ Trắng',
+    tagline: 'Phong bì nơ lụa • Hoa xanh porcelain • Thanh lịch châu Âu',
+    badgeText: 'WEDDING INVITATION • 03.03.2027',
+    gateTitle: 'The Wedding Of',
+    gateActionText: 'Chạm nơ để mở thiệp...',
+    bgPrimary: 'bg-[#F7F7F4]',
+    bgSecondary: 'bg-[#E9EDF4]',
+    bgCard: 'bg-[#FCFAF7]',
+    textPrimary: 'text-[#1A2C4A]',
+    textSecondary: 'text-[#5F6F89]',
+    textAccent: 'text-[#173D78]',
+    borderSubtle: 'border-[#D6DEEA]',
+    borderAccent: 'border-[#9EB2D2]',
+    btnPrimary: 'bg-[#173D78] text-white hover:bg-[#102E5E] shadow-md',
+    btnSecondary: 'border border-[#173D78] text-[#173D78] hover:bg-[#173D78] hover:text-white',
+    accentHex: '#173D78',
+    secondaryHex: '#8BA4CB',
+    confettiColors: ['#173D78', '#8BA4CB', '#D7E2F3', '#FFFDF9'],
     isDark: false,
   },
 };

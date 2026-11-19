@@ -29,6 +29,8 @@ const WhiteMinimalInvitation = lazy(() => import('./components/WhiteMinimalInvit
 const DangDaoMinimalInvitation = lazy(() => import('./components/DangDaoMinimalInvitation'));
 const GardenEmeraldInvitation = lazy(() => import('./components/GardenEmeraldInvitation'));
 const BurgundyCallaInvitation = lazy(() => import('./components/BurgundyCallaInvitation'));
+const LotusVietnamInvitation = lazy(() => import('./components/LotusVietnamInvitation'));
+const PorcelainBlueInvitation = lazy(() => import('./components/PorcelainBlueInvitation'));
 const AdminGuestModal = lazy(() => import('./components/AdminGuestModal'));
 
 gsap.registerPlugin(ScrollTrigger);
@@ -63,6 +65,8 @@ function mergeUniqueWishes(...lists: WishItem[][]): WishItem[] {
  * - /minimal hoặc /tone-trang -> minimal (05. Tone Trắng Minimal)
  * - /garden hoặc /khu-vuon -> garden (06. Khu Vườn Xanh Ngọc)
  * - /calla hoặc /calla-do -> calla (07. Mẫu Thiệp Calla Đỏ)
+ * - /lotus hoặc /hoa-sen -> lotus (08. Thiệp Hoa Sen Việt)
+ * - /porcelain hoặc /hoa-xanh -> porcelain (09. Hoa Xanh Sứ Trắng)
  */
 function detectInitialRouteStyle(): {
   style: StyleId;
@@ -174,6 +178,32 @@ function detectInitialRouteStyle(): {
     return { style: 'calla', isLockedSingleStyle: true, isDangDaoProduct: false };
   }
 
+  // Style 8: Vietnamese Lotus Poetry (Mẫu thiệp hoa sen Việt Nam)
+  if (
+    pathname.includes('/lotus') ||
+    pathname.includes('/hoa-sen') ||
+    pathname.includes('/style-8') ||
+    queryStyle === 'lotus' ||
+    queryStyle === 'hoa-sen' ||
+    queryStyle === 'style-8' ||
+    queryStyle === '8'
+  ) {
+    return { style: 'lotus', isLockedSingleStyle: true, isDangDaoProduct: false };
+  }
+
+  // Style 9: Porcelain Blue Garden (Mẫu phong bì nơ & hoa xanh sứ trắng)
+  if (
+    pathname.includes('/porcelain') ||
+    pathname.includes('/hoa-xanh') ||
+    pathname.includes('/style-9') ||
+    queryStyle === 'porcelain' ||
+    queryStyle === 'hoa-xanh' ||
+    queryStyle === 'style-9' ||
+    queryStyle === '9'
+  ) {
+    return { style: 'porcelain', isLockedSingleStyle: true, isDangDaoProduct: false };
+  }
+
   return { style: 'fairytale', isLockedSingleStyle: false, isDangDaoProduct: false };
 }
 
@@ -188,7 +218,12 @@ export function App() {
     if (routeConfig.isDangDaoProduct) {
       return DANG_DAO_WEDDING_DATA;
     }
-    if (routeConfig.style === 'garden' || routeConfig.style === 'calla') {
+    if (
+      routeConfig.style === 'garden' ||
+      routeConfig.style === 'calla' ||
+      routeConfig.style === 'lotus' ||
+      routeConfig.style === 'porcelain'
+    ) {
       return DUC_HAU_WEDDING_DATA;
     }
     return DEFAULT_WEDDING_DATA;
@@ -236,14 +271,16 @@ export function App() {
     if (typeof document !== 'undefined') {
       document.title = isDangDaoProduct
         ? 'THƯ MỜI CƯỚI HẢI ĐĂNG & ANH ĐÀO'
-        : 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
+        : styleId === 'garden' || styleId === 'calla' || styleId === 'lotus' || styleId === 'porcelain'
+          ? 'THƯ MỜI CƯỚI HUY ĐỨC & PHAN HẬU'
+          : 'THƯ MỜI CƯỚI THÀNH LONG & THANH HUYỀN';
     }
     if (isDangDaoProduct) {
       soundEngine.setPreferredTrackId('ta-la-cua-nhau');
     } else {
       soundEngine.setPreferredTrackId(null);
     }
-  }, [isDangDaoProduct]);
+  }, [isDangDaoProduct, styleId]);
 
   const activeCloudNamespace = isDangDaoProduct ? 'dd26' : 'lh26';
 
@@ -254,6 +291,8 @@ export function App() {
       import('./components/WhiteMinimalInvitation');
       import('./components/GardenEmeraldInvitation');
       import('./components/BurgundyCallaInvitation');
+      import('./components/LotusVietnamInvitation');
+      import('./components/PorcelainBlueInvitation');
     }, 1500);
     return () => window.clearTimeout(timer);
   }, [isLockedSingleStyle]);
@@ -365,7 +404,11 @@ export function App() {
   // Chỉ khởi chạy Lenis smoothWheel trên máy tính (pointer: fine) ở các Style 1–4 có ScrollTrigger;
   // Trên điện thoại cảm ứng dùng 100% Native 120Hz Hardware Scroll siêu mượt!
   const isScrollyStyle =
-    styleId !== 'minimal' && styleId !== 'garden' && styleId !== 'calla';
+    styleId !== 'minimal' &&
+    styleId !== 'garden' &&
+    styleId !== 'calla' &&
+    styleId !== 'lotus' &&
+    styleId !== 'porcelain';
 
   useEffect(() => {
     if (!isScrollyStyle || typeof window === 'undefined') return;
@@ -482,7 +525,7 @@ export function App() {
     setWeddingData(
       isDangDaoProduct
         ? DANG_DAO_WEDDING_DATA
-        : styleId === 'garden' || styleId === 'calla'
+        : styleId === 'garden' || styleId === 'calla' || styleId === 'lotus' || styleId === 'porcelain'
         ? DUC_HAU_WEDDING_DATA
         : DEFAULT_WEDDING_DATA
     );
@@ -491,12 +534,12 @@ export function App() {
 
   const handleSelectStyle = useCallback((id: StyleId) => {
     setStyleId(id);
-    if (id === 'garden' || id === 'calla') {
+    if (id === 'garden' || id === 'calla' || id === 'lotus' || id === 'porcelain') {
       setWeddingData(DUC_HAU_WEDDING_DATA);
     } else {
       setWeddingData(DEFAULT_WEDDING_DATA);
     }
-    if (id === 'minimal' || id === 'garden' || id === 'calla') {
+    if (id === 'minimal' || id === 'garden' || id === 'calla' || id === 'lotus' || id === 'porcelain') {
       setIsGateOpen(true);
     }
   }, []);
@@ -599,6 +642,68 @@ export function App() {
         <>
           <Suspense fallback={<div className="min-h-screen bg-[#240811]" />}>
             <BurgundyCallaInvitation
+              data={weddingData}
+              wishes={wishes}
+              onAddWish={handleAddWish}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              guestName={guestName}
+              onOpenAdmin={handleOpenAdmin}
+              onStartMusic={handleStartMusicIfNotPlaying}
+            />
+          </Suspense>
+          {!isLockedSingleStyle && (
+            <ConceptSwitcherDock
+              styleId={styleId}
+              onSelectStyle={handleSelectStyle}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              onReplayGate={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data={weddingData}
+              onUpdateData={setWeddingData}
+              guestName={guestName}
+              onUpdateGuestName={setGuestName}
+              onResetDefault={handleResetDefault}
+              hideStyleSwitcher={isLockedSingleStyle}
+            />
+          )}
+        </>
+      ) : styleId === 'lotus' ? (
+        /* PHONG CÁCH 08: THIỆP HOA SEN VIỆT NAM (VIDEO MẪU 1 - DỮ LIỆU STYLE 7) */
+        <>
+          <Suspense fallback={<div className="min-h-screen bg-[#FBFAF5]" />}>
+            <LotusVietnamInvitation
+              data={weddingData}
+              wishes={wishes}
+              onAddWish={handleAddWish}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              guestName={guestName}
+              onOpenAdmin={handleOpenAdmin}
+              onStartMusic={handleStartMusicIfNotPlaying}
+            />
+          </Suspense>
+          {!isLockedSingleStyle && (
+            <ConceptSwitcherDock
+              styleId={styleId}
+              onSelectStyle={handleSelectStyle}
+              isMusicPlaying={isMusicPlaying}
+              onToggleMusic={handleToggleMusic}
+              onReplayGate={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data={weddingData}
+              onUpdateData={setWeddingData}
+              guestName={guestName}
+              onUpdateGuestName={setGuestName}
+              onResetDefault={handleResetDefault}
+              hideStyleSwitcher={isLockedSingleStyle}
+            />
+          )}
+        </>
+      ) : styleId === 'porcelain' ? (
+        /* PHONG CÁCH 09: PHONG BÌ NƠ & HOA XANH SỨ TRẮNG (VIDEO MẪU 2 - DỮ LIỆU STYLE 7) */
+        <>
+          <Suspense fallback={<div className="min-h-screen bg-[#F7F7F4]" />}>
+            <PorcelainBlueInvitation
               data={weddingData}
               wishes={wishes}
               onAddWish={handleAddWish}
