@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Lock,
   Menu,
-  Minus,
-  Plus,
+  Pause,
+  Play,
   X,
 } from 'lucide-react';
 import { WeddingData, WishItem } from '../data/weddingData';
@@ -107,24 +109,142 @@ const PorcelainCountdown: React.FC<{ isoDate: string }> = ({ isoDate }) => {
   }, [isoDate]);
 
   const items = [
-    { label: 'DAYS', value: Math.floor(msLeft / 86400000) },
-    { label: 'HOURS', value: Math.floor((msLeft / 3600000) % 24) },
-    { label: 'MINUTES', value: Math.floor((msLeft / 60000) % 60) },
-    { label: 'SECONDS', value: Math.floor((msLeft / 1000) % 60) },
+    { label: 'NGÀY', value: Math.floor(msLeft / 86400000) },
+    { label: 'GIỜ', value: Math.floor((msLeft / 3600000) % 24) },
+    { label: 'PHÚT', value: Math.floor((msLeft / 60000) % 60) },
+    { label: 'GIÂY', value: Math.floor((msLeft / 1000) % 60) },
   ];
 
   return (
     <div className="grid grid-cols-4 gap-2 px-5">
       {items.map((item) => (
         <div key={item.label} className="text-center">
-          <div className="font-bodoni-editorial text-[34px] leading-none tracking-[-0.02em] text-[#1D335B] tabular-nums [font-variant-numeric:lining-nums]">
+          <div className="font-porcelain-serif text-[40px] leading-none tracking-[-0.02em] text-[#1D335B] tabular-nums [font-variant-numeric:lining-nums]">
             {String(item.value).padStart(2, '0')}
           </div>
-          <div className="mt-2.5 text-[7.5px] font-medium uppercase tracking-[0.22em] text-[#95A0B3]">
+          <div className="mt-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-[#7F8CA3]">
             {item.label}
           </div>
         </div>
       ))}
+    </div>
+  );
+};
+
+const PorcelainRotatingGallery: React.FC<{
+  photos: string[];
+  coupleName: string;
+  onSelect: (url: string) => void;
+}> = ({ photos, coupleName, onSelect }) => {
+  const [autoRotate, setAutoRotate] = useState(true);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const angleRef = useRef(0);
+  const stepRemainingRef = useRef(0);
+  const isInView = useInView(viewportRef, { margin: '260px 0px' });
+  const angleStep = photos.length > 0 ? 360 / photos.length : 0;
+
+  useEffect(() => {
+    if (!isInView || photos.length === 0) return;
+
+    let rafId = 0;
+    let lastTs = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(34, Math.max(0, now - lastTs));
+      lastTs = now;
+      const frameScale = dt / 16.667;
+
+      if (autoRotate) angleRef.current -= 0.11 * frameScale;
+      if (Math.abs(stepRemainingRef.current) > 0.05) {
+        const delta = stepRemainingRef.current * Math.min(1, 0.18 * frameScale);
+        angleRef.current += delta;
+        stepRemainingRef.current -= delta;
+      } else if (stepRemainingRef.current !== 0) {
+        angleRef.current += stepRemainingRef.current;
+        stepRemainingRef.current = 0;
+      }
+
+      if (trackRef.current) {
+        trackRef.current.style.transform = `rotateX(-3deg) rotateY(${angleRef.current.toFixed(2)}deg)`;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [autoRotate, isInView, photos.length]);
+
+  const step = (direction: -1 | 1) => {
+    stepRemainingRef.current += direction * angleStep;
+  };
+
+  if (photos.length === 0) return null;
+
+  return (
+    <div ref={viewportRef} className="relative z-10 mt-8 flex flex-col items-center">
+      <div
+        className="relative flex h-[285px] w-full items-center justify-center overflow-visible select-none"
+        style={{ perspective: '1150px' }}
+      >
+        <div
+          ref={trackRef}
+          className="relative h-[184px] w-[132px] will-change-transform [transform-style:preserve-3d]"
+          style={{ transform: 'rotateX(-3deg) rotateY(0deg)' }}
+        >
+          {photos.map((url, idx) => (
+            <button
+              key={`${url}-${idx}`}
+              type="button"
+              onClick={() => onSelect(url)}
+              aria-label={`Mở ảnh cưới ${idx + 1}`}
+              className="cursor-pointer group absolute inset-0 border border-[#8FA3C8] bg-[#FCFAF8] p-1.5 pb-7 shadow-[0_18px_38px_rgba(18,42,82,0.28)] [backface-visibility:visible]"
+              style={{
+                transform: `rotateY(${idx * angleStep}deg) translateZ(var(--porcelain-carousel-z, 178px))`,
+              }}
+            >
+              <span className="block h-full overflow-hidden border border-[#D9E0EC] bg-[#E9EDF4]">
+                <img
+                  src={url}
+                  alt={`${coupleName} — ảnh cưới ${idx + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+              </span>
+              <span className="font-porcelain-serif absolute inset-x-1 bottom-1.5 truncate text-center text-[12px] italic text-[#4F648A]">
+                Kỷ niệm của chúng mình
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => step(1)}
+          aria-label="Xoay album sang trái"
+          className="cursor-pointer grid h-9 w-9 place-items-center rounded-full border border-[#AEBBD1] bg-white/80 text-[#29436F] shadow-sm"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setAutoRotate((value) => !value)}
+          className="cursor-pointer inline-flex min-w-[148px] items-center justify-center gap-2 rounded-full bg-[#21365C] px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] text-white shadow-md"
+        >
+          {autoRotate ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current" />}
+          {autoRotate ? 'Tạm dừng xoay' : 'Tiếp tục xoay'}
+        </button>
+        <button
+          type="button"
+          onClick={() => step(-1)}
+          aria-label="Xoay album sang phải"
+          className="cursor-pointer grid h-9 w-9 place-items-center rounded-full border border-[#AEBBD1] bg-white/80 text-[#29436F] shadow-sm"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 };
@@ -139,19 +259,23 @@ const PorcelainTrifoldEnvelope: React.FC<{
   data: WeddingData;
   onComplete: () => void;
 }> = ({ data, onComplete }) => {
-  const [phase, setPhase] = useState<'closed' | 'untying' | 'doors' | 'zooming'>('closed');
+  const [phase, setPhase] = useState<
+    'closed' | 'untying' | 'doors' | 'flaps' | 'zooming'
+  >('closed');
 
   const handleOpen = () => {
     if (phase !== 'closed') return;
     soundEngine.playOpenChime();
     setPhase('untying');
-    window.setTimeout(() => setPhase('doors'), 720);
-    window.setTimeout(() => setPhase('zooming'), 1750);
-    window.setTimeout(() => onComplete(), 2550);
+    window.setTimeout(() => setPhase('doors'), 2350);
+    window.setTimeout(() => setPhase('flaps'), 4200);
+    window.setTimeout(() => setPhase('zooming'), 5700);
+    window.setTimeout(() => onComplete(), 7550);
   };
 
   const isUntying = phase !== 'closed';
-  const areDoorsOpen = phase === 'doors' || phase === 'zooming';
+  const areDoorsOpen = phase === 'doors' || phase === 'flaps' || phase === 'zooming';
+  const areFlapsOpen = phase === 'flaps' || phase === 'zooming';
   const isZooming = phase === 'zooming';
 
   return (
@@ -163,8 +287,8 @@ const PorcelainTrifoldEnvelope: React.FC<{
     >
       {/* Khung phong bì đứng 3 cánh gập 3D */}
       <motion.div
-        animate={isZooming ? { scale: 1.18, opacity: 0 } : { scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        animate={isZooming ? { scale: 1.22, opacity: 1 } : { scale: 1, opacity: 1 }}
+        transition={{ duration: 1.75, ease: [0.22, 1, 0.36, 1] }}
         className="relative aspect-[9/14.2] w-full max-w-[355px] [perspective:1800px]"
       >
         {/* Bóng đổ nền ấm dưới phong bì */}
@@ -174,24 +298,24 @@ const PorcelainTrifoldEnvelope: React.FC<{
         <div className="relative h-full w-full overflow-visible bg-[#EFE4D6] shadow-[0_24px_65px_rgba(40,28,22,0.22)]">
           {/* Nắp gập hình thang phía trên (mở bung ra sau khi cánh mở) */}
           <motion.div
-            animate={isZooming ? { rotateX: 115, opacity: 0.2 } : { rotateX: 0, opacity: 1 }}
-            transition={{ duration: 0.65, ease: 'easeInOut' }}
+            animate={areFlapsOpen ? { rotateX: 118, y: -12, opacity: 0.12 } : { rotateX: 0, y: 0, opacity: 1 }}
+            transition={{ duration: 1.5, ease: [0.45, 0.05, 0.25, 1] }}
             style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
             className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[11%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,88%_100%,12%_100%)] shadow-inner"
           />
 
           {/* Nắp gập hình thang phía dưới */}
           <motion.div
-            animate={isZooming ? { rotateX: -115, opacity: 0.2 } : { rotateX: 0, opacity: 1 }}
-            transition={{ duration: 0.65, ease: 'easeInOut' }}
+            animate={areFlapsOpen ? { rotateX: -118, y: 12, opacity: 0.12 } : { rotateX: 0, y: 0, opacity: 1 }}
+            transition={{ duration: 1.5, ease: [0.45, 0.05, 0.25, 1] }}
             style={{ transformOrigin: 'bottom center', transformStyle: 'preserve-3d' }}
             className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[11%] bg-gradient-to-t from-[#E8DAC8] to-[#F4EBDE] [clip-path:polygon(12%_0,88%_0,100%_100%,0_100%)]"
           />
 
           {/* TẤM THIỆP HOA XANH SỨ TRẮNG BÊN TRONG — LỘ RA NGAY KHI 2 CÁNH MỞ! */}
           <motion.div
-            animate={isZooming ? { scale: 1.07 } : { scale: 1 }}
-            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            animate={isZooming ? { scale: 1.18 } : { scale: 1 }}
+            transition={{ duration: 1.75, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-[4.5%] z-10 overflow-hidden bg-[#FAF5F4] shadow-inner"
           >
             <img
@@ -201,17 +325,43 @@ const PorcelainTrifoldEnvelope: React.FC<{
             />
             <div className="absolute inset-[18%_20%] bg-[#FAF5F4]/95">
               <BaroqueInnerFrameSvg />
+              <motion.div
+                animate={isZooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+                transition={{ duration: 1.2, delay: 0.25 }}
+                className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#1D335B]"
+              >
+                <p className="text-[7px] uppercase tracking-[0.2em] text-[#71819B]">
+                  TRÂN TRỌNG KÍNH MỜI
+                </p>
+                <p className="font-porcelain-serif mt-2 text-[22px] leading-none">
+                  {data.groom.shortName}
+                </p>
+                <span className="font-handwritten-minimal my-0.5 text-[14px] text-[#71819B]">&amp;</span>
+                <p className="font-porcelain-serif text-[22px] leading-none">
+                  {data.bride.shortName}
+                </p>
+                <p className="font-porcelain-serif mt-3 text-[8px] tracking-[0.16em]">
+                  {data.weddingDate.displayDate}
+                </p>
+              </motion.div>
             </div>
           </motion.div>
 
           {/* CÁNH CỬA PHONG BÌ TRÁI (3D SWING LEFT — NẾP GẤP CHÉO KIM CƯƠNG Y HỆT VIDEO 2) */}
           <motion.div
             animate={
-              areDoorsOpen
+              isZooming
+                ? {
+                    rotateY: -130,
+                    x: '-46%',
+                    opacity: 0,
+                    boxShadow: '-12px 16px 35px rgba(35,24,16,0.12)',
+                  }
+                : areDoorsOpen
                 ? { rotateY: -130, boxShadow: '-12px 16px 35px rgba(35,24,16,0.22)' }
                 : { rotateY: 0, boxShadow: '2px 0 6px rgba(55,40,28,0.12)' }
             }
-            transition={{ duration: 1.05, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
@@ -243,11 +393,18 @@ const PorcelainTrifoldEnvelope: React.FC<{
           {/* CÁNH CỬA PHONG BÌ PHẢI (3D SWING RIGHT — CÓ VÂN LÁ DẬP CHÌM Y HỆT VIDEO 2) */}
           <motion.div
             animate={
-              areDoorsOpen
+              isZooming
+                ? {
+                    rotateY: 130,
+                    x: '46%',
+                    opacity: 0,
+                    boxShadow: '12px 16px 35px rgba(35,24,16,0.12)',
+                  }
+                : areDoorsOpen
                 ? { rotateY: 130, boxShadow: '12px 16px 35px rgba(35,24,16,0.22)' }
                 : { rotateY: 0, boxShadow: '-2px 0 6px rgba(55,40,28,0.10)' }
             }
-            transition={{ duration: 1.05, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
@@ -284,33 +441,49 @@ const PorcelainTrifoldEnvelope: React.FC<{
 
           {/* Chữ dập chìm tinh tế phía trên nơ (mờ dần ngay khi mở) */}
           <motion.div
-            animate={isUntying ? { opacity: 0 } : { opacity: 0.55 }}
-            transition={{ duration: 0.35 }}
+            animate={areDoorsOpen ? { opacity: 0 } : { opacity: 0.62 }}
+            transition={{ duration: 0.55 }}
             className="pointer-events-none absolute inset-x-0 top-[15%] z-30 text-center"
           >
-            <p className="font-handwritten-minimal text-[23px] text-[#9E8B76]">
+            <p className="font-handwritten-minimal text-[27px] text-[#8F7E6C]">
               {data.groom.shortName} &amp; {data.bride.shortName}
             </p>
           </motion.div>
 
-          {/* NƠ LỤA BẠC SATIN 3D CHÂN THỰC QUẤN NGANG PHONG BÌ — THÁO RƠI XUỐNG KHI CHẠM */}
+          {/* Dải lụa ngang thu về hai phía trước, sau đó nút nơ mới lỏng và rơi xuống như video */}
+          <motion.div
+            animate={isUntying ? { x: '-105%', opacity: 0 } : { x: 0, opacity: 1 }}
+            transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
+            className="pointer-events-none absolute left-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#F5F5F6] via-[#BFC2C9] to-[#F8F8F8] shadow-[0_7px_10px_rgba(40,36,34,0.16)]"
+          />
+          <motion.div
+            animate={isUntying ? { x: '105%', opacity: 0 } : { x: 0, opacity: 1 }}
+            transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
+            className="pointer-events-none absolute right-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#F5F5F6] via-[#BFC2C9] to-[#F8F8F8] shadow-[0_7px_10px_rgba(40,36,34,0.16)]"
+          />
           <motion.div
             animate={
               isUntying
-                ? { y: 230, scale: 0.9, rotate: -4, opacity: 0 }
-                : { y: 0, scale: [1, 1.018, 1], rotate: 0, opacity: 1 }
+                ? {
+                    y: [0, 10, 38, 225],
+                    scaleX: [1, 1.06, 0.82, 0.68],
+                    scaleY: [1, 1.08, 1.18, 0.94],
+                    rotate: [0, 0, -2, -7],
+                    opacity: [1, 1, 1, 0],
+                  }
+                : { y: 0, scaleX: [1, 1.018, 1], scaleY: 1, rotate: 0, opacity: 1 }
             }
             transition={
               isUntying
-                ? { duration: 0.85, ease: [0.4, 0, 0.2, 1] }
+                ? { duration: 2.35, times: [0, 0.28, 0.58, 1], ease: [0.4, 0, 0.2, 1] }
                 : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }
             }
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-40"
+            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50 overflow-hidden"
           >
             <img
               src={decorUrl('style9-silver-bow.png')}
-              alt="Chạm vào nơ lụa bạc để mở thiệp"
-              className="w-full drop-shadow-[0_12px_18px_rgba(32,26,22,0.28)]"
+              alt="Nơ lụa bạc"
+              className="w-full drop-shadow-[0_12px_18px_rgba(32,26,22,0.28)] [clip-path:inset(0_18%_0_18%)]"
             />
           </motion.div>
 
@@ -320,7 +493,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
             transition={
               isUntying ? { duration: 0.25 } : { duration: 2.6, repeat: Infinity }
             }
-            className="pointer-events-none absolute inset-x-0 bottom-[7%] z-30 text-center font-bodoni-editorial text-[9px] uppercase tracking-[0.34em] text-[#8A7B6B]"
+            className="pointer-events-none absolute inset-x-0 bottom-[7%] z-30 text-center font-porcelain-serif text-[11px] uppercase tracking-[0.28em] text-[#7F705F]"
           >
             CHẠM VÀO NƠ ĐỂ MỞ THIỆP
           </motion.p>
@@ -329,21 +502,6 @@ const PorcelainTrifoldEnvelope: React.FC<{
     </motion.div>
   );
 };
-
-const FAQ_ITEMS = [
-  {
-    q: 'Tôi có thể đi cùng người thương hoặc gia đình không?',
-    a: 'Sự hiện diện của bạn cùng người thân là niềm hạnh phúc lớn nhất của Huy Đức & Phan Hậu. Bạn chỉ cần ghi chú trong mục RSVP để gia đình chu đáo đón tiếp nhé.',
-  },
-  {
-    q: 'Trang phục phù hợp cho ngày lễ là gì?',
-    a: 'Chúng mình gợi ý trang phục thanh lịch với các tông màu xanh navy, xanh pastel, kem ngà, trắng sữa hoặc be nhã nhặn để cùng hòa sắc trong những khung hình kỷ niệm.',
-  },
-  {
-    q: 'Thời gian đón khách & khu vực gửi xe như thế nào?',
-    a: 'Gia đình đón khách từ 17:00 ngày 02/03 (Tiệc thân mật) và 10:30 ngày 03/03/2027 (Lễ Thành Hôn). Có khu vực đỗ ô tô và xe máy rộng rãi ngay sát tư gia nhà trai.',
-  },
-];
 
 export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = ({
   data,
@@ -362,7 +520,6 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
 
   const [showAccount, setShowAccount] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Tự động thử bật nhạc sau 1 giây khi vừa vào link (nếu trình duyệt cho phép; nếu bị chặn sẽ phát ngay khi chạm nơ mở thiệp)
@@ -375,7 +532,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
 
   // Form RSVP
   const [guestInput, setGuestInput] = useState(() => getInitialGuestName(guestName));
-  const [willAttend, setWillAttend] = useState<'yes' | 'no'>('yes');
+  const [attendanceAnswer, setAttendanceAnswer] = useState('Có, chắc chắn mình sẽ tham dự!');
   const [wishText, setWishText] = useState('');
   const [rsvpSent, setRsvpSent] = useState(false);
 
@@ -399,7 +556,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
       decorUrl('style9-dancing-couple.jpg'),
       decorUrl('style9-wedding-cake.jpg'),
       data.sectionImages.hero,
-      ...data.album9Images.slice(0, 4).map((p) => p.url),
+      ...data.album9Images.slice(0, 11).map((p) => p.url),
     ];
     return preloadAndDecodeImages(urls, { delayMs: 150, concurrency: 3 });
   }, [data]);
@@ -465,10 +622,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
       message:
         wishText.trim() ||
         'Chúc hai bạn trăm năm hạnh phúc và mãi giữ trọn yêu thương!',
-      attendance:
-        willAttend === 'yes'
-          ? 'Có, chắc chắn mình sẽ tham dự!'
-          : 'Rất tiếc, mình không thể tham dự',
+      attendance: attendanceAnswer,
       createdAt: `${now.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -485,13 +639,27 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
     window.setTimeout(() => setRsvpSent(false), 2600);
   };
 
-  // 4 ảnh đôi tinh tuyển từ Style 7
-  const coupleGallery = [
-    data.sectionImages.hero,
-    data.album9Images[0]?.url,
-    data.album9Images[1]?.url,
-    data.album9Images[2]?.url,
-  ].filter(Boolean) as string[];
+  const coupleGallery = Array.from(
+    new Set(
+      [data.sectionImages.hero, ...data.album9Images.slice(0, 11).map((photo) => photo.url)].filter(
+        Boolean
+      ) as string[]
+    )
+  );
+
+  const style9Locations = data.partyEvents.slice(0, 2).map((event, idx) => {
+    const address =
+      idx === 0
+        ? '123 Sài Thị - Hưng Yên'
+        : 'Nhà văn hóa xã Triệu Việt Vương - Hưng Yên';
+    return {
+      ...event,
+      address,
+      title: idx === 0 ? 'Tư gia nhà trai' : 'Nhà văn hóa xã Triệu Việt Vương',
+      familyLabel: idx === 0 ? 'NHÀ TRAI' : 'NHÀ GÁI',
+      mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
+    };
+  });
 
   return (
     <div className="min-h-screen w-full bg-[#EAE5E7] text-[#1D335B] flex justify-center overflow-x-clip md:py-8">
@@ -522,7 +690,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
       )}
 
       {/* KHUNG THIỆP SỨ TRẮNG HOA XANH 9:16 */}
-      <main className="relative w-full max-w-[430px] min-h-screen bg-[#FAF5F4] shadow-[0_0_70px_rgba(22,38,72,0.16)] overflow-x-clip pb-16">
+      <main className="relative w-full max-w-[430px] min-h-screen bg-[#FAF5F4] text-[14px] leading-relaxed shadow-[0_0_70px_rgba(22,38,72,0.16)] overflow-x-clip pb-16">
         {/* THANH HEADER NAVY CỐ ĐỊNH — CHỈ TRƯỢT XUỐNG KHI CUỘN QUA BÌA (Y HỆT VIDEO 2!) */}
         <motion.header
           initial={false}
@@ -537,7 +705,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
           <button
             type="button"
             onClick={() => scrollToSection('s9-home')}
-            className="cursor-pointer grid h-8 w-8 place-items-center rounded-full border border-white/45 font-bodoni-editorial text-[10px] tracking-[0.06em]"
+            className="cursor-pointer grid h-8 w-8 place-items-center rounded-full border border-white/45 font-porcelain-serif text-[12px] tracking-[0.06em]"
           >
             {monogram}
           </button>
@@ -571,15 +739,14 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute inset-x-0 top-full border-t border-white/15 bg-[#1D3154] px-6 py-4 shadow-xl"
               >
-                <div className="grid grid-cols-2 gap-y-3 text-left text-[10px] uppercase tracking-[0.2em] text-white/90">
+                <div className="grid grid-cols-2 gap-y-3 text-left text-[11px] uppercase tracking-[0.15em] text-white/90">
                   {[
-                    ['s9-home', 'Home'],
-                    ['s9-location', '01 · Location'],
-                    ['s9-the-day', '02 · The Day'],
-                    ['s9-dress-code', '03 · Dress Code'],
-                    ['s9-gift-list', '04 · Gift List'],
-                    ['s9-rsvp', '05 · RSVP'],
-                    ['s9-faq', '06 · FAQ'],
+                    ['s9-home', 'Trang đầu'],
+                    ['s9-location', '01 · Địa điểm'],
+                    ['s9-the-day', '02 · Ngày cưới'],
+                    ['s9-dress-code', '03 · Trang phục'],
+                    ['s9-gift-list', '04 · Mừng cưới'],
+                    ['s9-rsvp', '05 · Lời chúc'],
                   ].map(([id, label]) => (
                     <button
                       key={id}
@@ -623,18 +790,18 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               initial={{ opacity: 0, y: 8 }}
               animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
               transition={{ duration: 0.65, delay: 0.35 }}
-              className="text-[7.5px] font-medium uppercase leading-[1.6] tracking-[0.22em] text-[#7A8AA6]"
+              className="text-[10px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#7A8AA6]"
             >
-              WITH ALL OUR LOVE, WE
+              BẰNG TẤT CẢ YÊU THƯƠNG
               <br />
-              INVITE YOU
+              TRÂN TRỌNG KÍNH MỜI
             </motion.p>
 
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
               transition={{ duration: 0.8, delay: 0.5 }}
-              className="font-bodoni-editorial mt-4 text-[34px] font-normal leading-[1.08] tracking-[-0.01em] text-[#1D335B]"
+              className="font-porcelain-serif mt-4 text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]"
             >
               {data.groom.shortName}
             </motion.h1>
@@ -652,7 +819,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               initial={{ opacity: 0, y: 12 }}
               animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
               transition={{ duration: 0.8, delay: 0.68 }}
-              className="font-bodoni-editorial text-[34px] font-normal leading-[1.08] tracking-[-0.01em] text-[#1D335B]"
+              className="font-porcelain-serif text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]"
             >
               {data.bride.shortName}
             </motion.h1>
@@ -663,7 +830,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               initial={{ opacity: 0 }}
               animate={isEnvelopeOpen ? { opacity: 1 } : { opacity: 0 }}
               transition={{ duration: 0.7, delay: 0.82 }}
-              className="font-bodoni-editorial text-[12.5px] tracking-[0.22em] text-[#4C6289]"
+              className="font-porcelain-serif text-[16px] tracking-[0.2em] text-[#4C6289]"
             >
               {dottedDate}
             </motion.p>
@@ -674,7 +841,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               transition={{ duration: 0.7, delay: 0.92 }}
               className="font-handwritten-minimal mt-1.5 text-[21px] text-[#6D7FA0]"
             >
-              Bắc Ninh · Việt Nam
+              Hưng Yên · Việt Nam
             </motion.p>
 
             <motion.button
@@ -683,9 +850,9 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               initial={{ opacity: 0 }}
               animate={isEnvelopeOpen ? { opacity: 0.75 } : { opacity: 0 }}
               transition={{ duration: 0.7, delay: 1.05 }}
-              className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[7.5px] uppercase tracking-[0.28em] text-[#6E7F9E]"
+              className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E]"
             >
-              <span>SCROLL</span>
+              <span>CUỘN XUỐNG</span>
               <ChevronDown className="h-3 w-3 animate-bounce" />
             </motion.button>
           </motion.div>
@@ -701,8 +868,8 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.8 }}
           >
-            <p className="font-handwritten-minimal text-[25px] text-[#66799C]">
-              Forever begins in
+            <p className="font-handwritten-minimal text-[30px] text-[#66799C]">
+              Hạnh phúc bắt đầu sau
             </p>
             <div className="mt-7">
               <PorcelainCountdown isoDate={data.weddingDate.isoDate} />
@@ -711,7 +878,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             {/* Minh họa tháp ly Champagne rót rượu quấn hoa hồng xanh (y hệt f_015 video 2!) */}
             <motion.img
               src={decorUrl('style9-champagne-tower.jpg')}
-              alt="Champagne tower illustration"
+              alt="Tháp ly champagne"
               initial={{ opacity: 0, y: 18, scale: 0.96 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, amount: 0.2 }}
@@ -746,11 +913,11 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             transition={{ duration: 0.75 }}
             className="text-center"
           >
-            <p className="text-[8px] uppercase tracking-[0.26em] text-[#95A0B3]">DATE</p>
-            <p className="font-bodoni-editorial mt-2 text-[22px] text-[#1D335B]">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-[#95A0B3]">NGÀY CƯỚI</p>
+            <p className="font-porcelain-serif mt-2 text-[28px] text-[#1D335B]">
               03 Tháng 03, 2027
             </p>
-            <p className="mt-1 text-[11px] text-[#7E8BA2]">
+            <p className="mt-1 text-[13px] text-[#7E8BA2]">
               {data.weddingDate.dayOfWeek} · {data.weddingDate.lunarDate}
             </p>
           </motion.div>
@@ -763,17 +930,17 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             transition={{ duration: 0.75 }}
             className="mt-12 text-center"
           >
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
+            <p className="font-porcelain-serif text-[13px] tracking-[0.2em] text-[#8E9AB0]">
               01
             </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[28px] text-[#1D335B]">
-              Location
+            <h2 className="font-porcelain-serif mt-1 text-[34px] text-[#1D335B]">
+              Địa điểm tổ chức
             </h2>
           </motion.div>
 
           {/* Các địa điểm sự kiện của Style 7 — trình bày căn trái tối giản + bản đồ sáng */}
           <div className="mt-10 space-y-12 text-left">
-            {data.partyEvents.map((ev, idx) => {
+            {style9Locations.map((ev, idx) => {
               const query = encodeURIComponent(ev.address);
               return (
                 <motion.div
@@ -783,13 +950,13 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.75 }}
                 >
-                  <p className="text-[8.5px] uppercase tracking-[0.22em] text-[#8C98AD]">
-                    {idx === 0 ? 'TIỆC MỜI THÂN MẬT (02.03.2027)' : 'LỄ THÀNH HÔN & KHAI TIỆC (03.03.2027)'}
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C98AD]">
+                    {idx === 0 ? 'NHÀ TRAI · TIỆC MỜI THÂN MẬT' : 'NHÀ GÁI · LỄ THÀNH HÔN'}
                   </p>
-                  <h3 className="font-bodoni-editorial mt-1.5 text-[23px] text-[#1D335B]">
+                  <h3 className="font-porcelain-serif mt-1.5 text-[28px] text-[#1D335B]">
                     {ev.title}
                   </h3>
-                  <p className="mt-1 text-[11.5px] leading-relaxed text-[#6E7C94]">
+                  <p className="mt-1 text-[13px] leading-relaxed text-[#6E7C94]">
                     {ev.timeText} · {ev.dayOfWeek}, {ev.dayMonth}.{ev.year}
                     <br />
                     {ev.address}
@@ -809,7 +976,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                       rel="noreferrer"
                       className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded bg-white/95 px-2.5 py-1 text-[10px] font-medium text-[#1D335B] shadow-sm"
                     >
-                      Open in Maps ↗
+                      Mở bản đồ ↗
                     </a>
                   </div>
 
@@ -817,42 +984,82 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                     href={ev.mapUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.22em] text-[#667899] hover:text-[#1D335B]"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[#667899] hover:text-[#1D335B]"
                   >
-                    OPEN IN MAPS →
+                    XEM ĐƯỜNG ĐI →
                   </a>
                 </motion.div>
               );
             })}
           </div>
 
-          {/* Mục thông tin gia đình & chỉ dẫn đỗ xe (giống f_023 video 2) */}
-          <div className="mt-12 space-y-6 border-t border-[#E6E2E5] pt-8 text-left">
-            <div>
-              <p className="text-[8.5px] uppercase tracking-[0.22em] text-[#95A0B3]">
-                GIA ĐÌNH NHÀ TRAI
-              </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-[#50607B]">
-                Ông {data.groom.fatherName} &amp; Bà {data.groom.motherName} — Thôn Phú Xá, Xã Văn Môn, Yên Phong, Bắc Ninh.
-              </p>
+          {/* Thông tin hai gia đình được đặt trong khung thiệp sứ cân đối */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.75 }}
+            className="relative mt-14 overflow-hidden border border-[#AAB8CF] bg-white/55 px-4 py-8 text-center shadow-[0_12px_30px_rgba(31,53,92,0.08)]"
+          >
+            <div className="pointer-events-none absolute inset-1 border border-[#D6DDE9]" />
+            <img
+              src={decorUrl('style9-corner-rose.jpg')}
+              alt=""
+              className="pointer-events-none absolute -left-5 -top-5 w-24 select-none mix-blend-multiply opacity-45"
+            />
+            <img
+              src={decorUrl('style9-corner-rose.jpg')}
+              alt=""
+              className="pointer-events-none absolute -bottom-5 -right-5 w-24 -scale-x-100 -scale-y-100 select-none mix-blend-multiply opacity-45"
+            />
+
+            <p className="relative text-[11px] uppercase tracking-[0.2em] text-[#7E8DA7]">
+              ĐẠI DIỆN HAI GIA ĐÌNH
+            </p>
+            <div className="relative mx-auto mt-3 h-px w-12 bg-[#AAB8CF]" />
+
+            <div className="relative mt-7 grid grid-cols-2 divide-x divide-[#D6DDE9]">
+              <div className="px-3">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#71819D]">
+                  NHÀ TRAI
+                </p>
+                <p className="font-porcelain-serif mt-3 text-[17px] leading-relaxed text-[#1D335B]">
+                  Ông {data.groom.fatherName}
+                  <br />
+                  Bà {data.groom.motherName}
+                </p>
+                <p className="mt-3 text-[11px] leading-relaxed text-[#7A879D]">
+                  123 Sài Thị
+                  <br />
+                  Hưng Yên
+                </p>
+              </div>
+              <div className="px-3">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#71819D]">
+                  NHÀ GÁI
+                </p>
+                <p className="font-porcelain-serif mt-3 text-[17px] leading-relaxed text-[#1D335B]">
+                  Ông {data.bride.fatherName}
+                  <br />
+                  Bà {data.bride.motherName}
+                </p>
+                <p className="mt-3 text-[11px] leading-relaxed text-[#7A879D]">
+                  Xã Triệu Việt Vương
+                  <br />
+                  Hưng Yên
+                </p>
+              </div>
             </div>
-            <div className="border-t border-[#ECE7E9] pt-5">
-              <p className="text-[8.5px] uppercase tracking-[0.22em] text-[#95A0B3]">
-                GIA ĐÌNH NHÀ GÁI
-              </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-[#50607B]">
-                Ông {data.bride.fatherName} &amp; Bà {data.bride.motherName}.
-              </p>
-            </div>
-            <div className="border-t border-[#ECE7E9] pt-5">
-              <p className="text-[8.5px] uppercase tracking-[0.22em] text-[#95A0B3]">
+
+            <div className="relative mx-2 mt-7 border-t border-[#D6DDE9] pt-5">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#71819D]">
                 ĐỖ XE &amp; DI CHUYỂN
               </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-[#50607B]">
-                Khu vực đỗ xe ô tô và xe máy rộng rãi, hoàn toàn miễn phí ngay sát Tư Gia Nhà Trai.
+              <p className="mt-2 text-[12px] leading-relaxed text-[#66758F]">
+                Có khu vực đỗ ô tô và xe máy thuận tiện tại địa điểm tổ chức.
               </p>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         {/* ============================================================
@@ -871,11 +1078,11 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
           />
 
           <div className="mt-4 text-center">
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
+            <p className="font-porcelain-serif text-[13px] tracking-[0.2em] text-[#8E9AB0]">
               02
             </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[28px] text-[#1D335B]">
-              The Day
+            <h2 className="font-porcelain-serif mt-1 text-[34px] text-[#1D335B]">
+              Ngày trọng đại
             </h2>
           </div>
 
@@ -916,18 +1123,18 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                 className="grid grid-cols-[62px_1fr] gap-4"
               >
                 <div className="pt-0.5 text-right">
-                  <p className="text-[11px] font-medium tracking-[0.06em] text-[#8E9AB0]">
+                  <p className="text-[13px] font-medium tracking-[0.06em] text-[#8E9AB0]">
                     {item.time}
                   </p>
-                  <p className="text-[9px] text-[#AAB3C2]">{item.day}</p>
+                  <p className="text-[11px] text-[#AAB3C2]">{item.day}</p>
                 </div>
 
                 <div className="relative border-l border-[#D8DCE7] pb-9 pl-5 text-left">
                   <span className="absolute -left-[3.5px] top-1.5 h-1.5 w-1.5 rounded-full bg-[#1D335B]" />
-                  <h3 className="font-bodoni-editorial text-[20px] leading-snug text-[#1D335B]">
+                  <h3 className="font-porcelain-serif text-[23px] leading-snug text-[#1D335B]">
                     {item.title}
                   </h3>
-                  <p className="mt-1 text-[11.5px] leading-relaxed text-[#7E8BA2]">
+                  <p className="mt-1 text-[13px] leading-relaxed text-[#7E8BA2]">
                     {item.desc}
                   </p>
                 </div>
@@ -935,27 +1142,18 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             ))}
           </div>
 
-          {/* Khối ảnh cưới tinh tuyển của Style 7 (khung viền mảnh phong cách Editorial Porcelain) */}
-          <div className="relative z-10 mt-6 grid grid-cols-2 gap-2.5">
-            {coupleGallery.map((url, idx) => (
-              <motion.button
-                key={url}
-                type="button"
-                onClick={() => setLightboxUrl(url)}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.65, delay: idx * 0.08 }}
-                className="cursor-pointer group overflow-hidden border border-[#DCE1EB] bg-white p-1 shadow-sm"
-              >
-                <img
-                  src={url}
-                  alt={`${data.groom.shortName} & ${data.bride.shortName} - ${idx + 1}`}
-                  loading="lazy"
-                  className="aspect-[3/4] w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
-                />
-              </motion.button>
-            ))}
+          <div id="s9-gallery" className="relative z-10 mt-10 text-center">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#8290A8]">
+              NHỮNG KHOẢNH KHẮC YÊU THƯƠNG
+            </p>
+            <h3 className="font-porcelain-serif mt-1 text-[32px] text-[#1D335B]">
+              Album ảnh cưới
+            </h3>
+            <PorcelainRotatingGallery
+              photos={coupleGallery}
+              coupleName={`${data.groom.shortName} & ${data.bride.shortName}`}
+              onSelect={setLightboxUrl}
+            />
           </div>
 
           {/* Cụm hoa sứ xanh lớn tràn từ góc dưới trái (y hệt f_026 video 2!) */}
@@ -982,11 +1180,11 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
           />
 
           <div className="mt-4 text-center">
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
+            <p className="font-porcelain-serif text-[13px] tracking-[0.2em] text-[#8E9AB0]">
               03
             </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[23px] text-[#4E6184]">
-              Dress code
+            <h2 className="font-porcelain-serif mt-1 text-[30px] text-[#4E6184]">
+              Trang phục
             </h2>
           </div>
 
@@ -1004,12 +1202,12 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             transition={{ duration: 0.75 }}
             className="relative z-10 mt-10 text-left"
           >
-            <h3 className="font-bodoni-editorial text-[44px] font-normal leading-[1.04] tracking-[-0.02em] text-[#1D335B]">
-              Formal
+            <h3 className="font-porcelain-serif text-[46px] font-medium leading-[1.04] tracking-[-0.02em] text-[#1D335B]">
+              Thanh lịch
               <br />
-              elegance
+              &amp; trang trọng
             </h3>
-            <p className="mt-5 max-w-[270px] text-[12px] leading-[1.7] text-[#6E7C94]">
+            <p className="mt-5 max-w-[300px] text-[14px] leading-[1.7] text-[#6E7C94]">
               Chúng mình rất mong quý khách diện trang phục lịch sự, thanh nhã với các tông màu xanh navy, xanh pastel, kem ngà hoặc be sáng.
             </p>
             <div className="mt-5 flex items-center gap-2.5">
@@ -1042,28 +1240,28 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
         <section id="s9-gift-list" className="relative border-t border-[#ECE5E4] px-7 pb-16 pt-12">
 
           <div className="text-center">
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
+            <p className="font-porcelain-serif text-[13px] tracking-[0.2em] text-[#8E9AB0]">
               04
             </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[23px] text-[#1D335B]">
-              Gift list
+            <h2 className="font-porcelain-serif mt-1 text-[30px] text-[#1D335B]">
+              Mừng cưới
             </h2>
           </div>
 
           <div className="mt-9 text-left">
-            <h3 className="font-bodoni-editorial text-[30px] leading-tight text-[#1D335B]">
-              A gift for us
+            <h3 className="font-porcelain-serif text-[36px] leading-tight text-[#1D335B]">
+              Món quà yêu thương
             </h3>
-            <p className="mt-3 text-[12px] leading-[1.7] text-[#6E7C94]">
+            <p className="mt-3 text-[14px] leading-[1.7] text-[#6E7C94]">
               Sự hiện diện của bạn là món quà quý giá nhất đối với {data.groom.shortName} &amp; {data.bride.shortName}. Nếu bạn muốn gửi thêm lời chúc phúc từ xa, có thể mở thông tin bên dưới.
             </p>
 
             <button
               type="button"
               onClick={() => setShowAccount((prev) => !prev)}
-              className="cursor-pointer mt-5 border border-[#CFD5E2] bg-transparent px-6 py-2.5 text-[9.5px] font-medium uppercase tracking-[0.22em] text-[#4C6084] transition-colors hover:border-[#1D335B] hover:text-[#1D335B]"
+              className="cursor-pointer mt-5 border border-[#CFD5E2] bg-transparent px-6 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-[#4C6084] transition-colors hover:border-[#1D335B] hover:text-[#1D335B]"
             >
-              {showAccount ? 'HIDE ACCOUNT' : 'GIVE A GIFT'}
+              {showAccount ? 'ẨN THÔNG TIN' : 'GỬI QUÀ MỪNG'}
             </button>
 
             <AnimatePresence>
@@ -1084,13 +1282,13 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                         key={key}
                         className="border border-[#1D335B]/55 bg-white/60 p-5 text-left"
                       >
-                        <p className="text-[8.5px] uppercase tracking-[0.2em] text-[#8D98AC]">
-                          ACCOUNT HOLDER · {gift.accountHolder}
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#8D98AC]">
+                          CHỦ TÀI KHOẢN · {gift.accountHolder}
                         </p>
-                        <p className="font-bodoni-editorial mt-1.5 text-[16px] tracking-[0.06em] text-[#1D335B]">
+                        <p className="font-porcelain-serif mt-1.5 text-[19px] tracking-[0.06em] text-[#1D335B]">
                           {gift.accountNumber}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#6E7C94]">
+                        <p className="mt-0.5 text-[13px] text-[#6E7C94]">
                           {gift.bankBranch}
                         </p>
 
@@ -1098,14 +1296,14 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                           <button
                             type="button"
                             onClick={() => handleCopy(key, gift.accountNumber)}
-                            className="cursor-pointer inline-flex items-center gap-1.5 bg-[#21365C] px-6 py-2 text-[9.5px] font-medium uppercase tracking-[0.22em] text-white transition-colors hover:bg-[#162745]"
+                            className="cursor-pointer inline-flex items-center gap-1.5 bg-[#21365C] px-6 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#162745]"
                           >
                             {copiedKey === key ? (
                               <>
-                                <Check className="h-3 w-3" /> COPIED
+                                <Check className="h-3 w-3" /> ĐÃ SAO CHÉP
                               </>
                             ) : (
-                              'COPY'
+                              'SAO CHÉP'
                             )}
                           </button>
 
@@ -1132,92 +1330,80 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
         </section>
 
         {/* ============================================================
-            PHẦN 7: 05 RSVP — 2 NÚT CHỌN SONG SONG + NÚT SEND RSVP NAVY (f_036 - f_039)
+            PHẦN 7: 05 LỜI CHÚC & XÁC NHẬN THAM DỰ
            ============================================================ */}
         <section id="s9-rsvp" className="border-t border-[#ECE5E4] px-7 pb-14 pt-12">
           <div className="text-center">
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
+            <p className="font-porcelain-serif text-[13px] tracking-[0.2em] text-[#8E9AB0]">
               05
             </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[26px] text-[#1D335B]">
-              RSVP
+            <h2 className="font-porcelain-serif mt-1 text-[32px] text-[#1D335B]">
+              Gửi lời chúc
             </h2>
           </div>
 
           <form onSubmit={handleRsvpSubmit} className="mt-9 text-left">
-            <p className="text-[8.5px] uppercase tracking-[0.22em] text-[#96A1B4]">
-              LET US KNOW
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#96A1B4]">
+              CHÚNG MÌNH RẤT MONG TIN BẠN
             </p>
-            <p className="font-handwritten-minimal mt-1 text-[28px] leading-tight text-[#5F7396]">
+            <p className="font-handwritten-minimal mt-1 text-[32px] leading-tight text-[#5F7396]">
               {guestInput || 'Quý Khách Mời'}
             </p>
-            <p className="mt-2 text-[12px] leading-relaxed text-[#7E8BA2]">
-              Vui lòng xác nhận sự tham dự của bạn trước ngày 25 Tháng 02, 2027.
+            <p className="mt-2 text-[14px] leading-relaxed text-[#7E8BA2]">
+              Hãy để lại một lời chúc và cho chúng mình biết bạn có thể đến chung vui nhé.
             </p>
 
-            {/* Ô nhập tên khách với đường kẻ mảnh dưới đáy */}
             <div className="mt-7">
-              <label className="block text-[8.5px] uppercase tracking-[0.2em] text-[#95A0B3]">
-                HỌ VÀ TÊN CỦA BẠN
+              <label htmlFor="s9-guest-name" className="block text-[11px] uppercase tracking-[0.18em] text-[#95A0B3]">
+                1. Tên của bạn là gì?
               </label>
               <input
+                id="s9-guest-name"
                 type="text"
                 required
                 value={guestInput}
                 onChange={(e) => setGuestInput(e.target.value)}
-                placeholder="Nhập tên của bạn..."
-                className="font-bodoni-editorial mt-1.5 w-full border-b border-[#D8DCE6] bg-transparent pb-2 text-[18px] text-[#1D335B] placeholder-[#BCC4D2] outline-none focus:border-[#1D335B]"
+                placeholder="Nhập họ và tên..."
+                className="font-porcelain-serif mt-2 w-full border border-[#D8DCE6] bg-white/60 px-4 py-3 text-[18px] text-[#1D335B] placeholder-[#AAB4C4] outline-none transition focus:border-[#7890B8] focus:ring-2 focus:ring-[#7890B8]/15"
               />
             </div>
 
-            {/* Hai nút chia đôi ngang YES, I'LL BE THERE / CAN'T MAKE IT giống hệt f_036 video 2! */}
-            <div className="mt-5 grid grid-cols-2 border border-[#DFE3EC]">
-              <button
-                type="button"
-                onClick={() => setWillAttend('yes')}
-                className={`cursor-pointer px-3 py-3.5 text-center text-[9px] font-medium uppercase leading-snug tracking-[0.16em] transition-colors ${
-                  willAttend === 'yes'
-                    ? 'bg-[#21365C] text-white'
-                    : 'bg-white/50 text-[#7B88A0] hover:bg-white'
-                }`}
-              >
-                YES, I&apos;LL BE
-                <br />
-                THERE
-              </button>
-              <button
-                type="button"
-                onClick={() => setWillAttend('no')}
-                className={`cursor-pointer border-l border-[#DFE3EC] px-3 py-3.5 text-center text-[9px] font-medium uppercase leading-snug tracking-[0.16em] transition-colors ${
-                  willAttend === 'no'
-                    ? 'bg-[#21365C] text-white'
-                    : 'bg-white/50 text-[#7B88A0] hover:bg-white'
-                }`}
-              >
-                CAN&apos;T MAKE IT
-              </button>
-            </div>
-
-            {/* Lời chúc gửi cô dâu chú rể */}
             <div className="mt-6">
-              <label className="block text-[8.5px] uppercase tracking-[0.2em] text-[#95A0B3]">
-                LỜI CHÚC GỬI DÂU RỂ
+              <label htmlFor="s9-wish" className="block text-[11px] uppercase tracking-[0.18em] text-[#95A0B3]">
+                2. Bạn muốn gửi lời chúc gì tới cô dâu chú rể?
               </label>
-              <input
-                type="text"
+              <textarea
+                id="s9-wish"
+                required
+                rows={4}
                 value={wishText}
                 onChange={(e) => setWishText(e.target.value)}
-                placeholder="Gửi lời chúc phúc đến Huy Đức & Phan Hậu..."
-                className="mt-2 w-full border-b border-[#D8DCE6] bg-transparent pb-2 text-[12.5px] text-[#35486A] placeholder-[#B4BDCB] outline-none focus:border-[#1D335B]"
+                placeholder={`Gửi lời chúc phúc đến ${data.groom.shortName} & ${data.bride.shortName}...`}
+                className="mt-2 w-full resize-none border border-[#D8DCE6] bg-white/60 px-4 py-3 text-[14px] leading-relaxed text-[#35486A] placeholder-[#AAB4C4] outline-none transition focus:border-[#7890B8] focus:ring-2 focus:ring-[#7890B8]/15"
               />
             </div>
 
-            {/* Nút SEND RSVP xanh navy vuông sắc nét căn trái giống hệt f_039 video 2! */}
+            <div className="mt-6">
+              <label htmlFor="s9-attendance" className="block text-[11px] uppercase tracking-[0.18em] text-[#95A0B3]">
+                3. Bạn có thể tham dự lễ cưới không?
+              </label>
+              <select
+                id="s9-attendance"
+                value={attendanceAnswer}
+                onChange={(e) => setAttendanceAnswer(e.target.value)}
+                className="mt-2 w-full appearance-none border border-[#D8DCE6] bg-white/70 px-4 py-3 text-[14px] text-[#35486A] outline-none transition focus:border-[#7890B8] focus:ring-2 focus:ring-[#7890B8]/15"
+              >
+                <option value="Có, chắc chắn mình sẽ tham dự!">Có, chắc chắn mình sẽ tham dự!</option>
+                <option value="Rất tiếc, mình không thể tham dự">Rất tiếc, mình không thể tham dự</option>
+                <option value="Mình sẽ phản hồi lại sớm">Mình sẽ phản hồi lại sớm</option>
+              </select>
+            </div>
+
             <button
               type="submit"
-              className="cursor-pointer mt-8 bg-[#21365C] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.22em] text-white shadow-sm transition-colors hover:bg-[#162745]"
+              className="cursor-pointer mt-8 w-full bg-[#21365C] px-6 py-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white shadow-sm transition-colors hover:bg-[#162745]"
             >
-              {rsvpSent ? 'RSVP SENT ✓' : 'SEND RSVP'}
+              {rsvpSent ? 'ĐÃ GỬI LỜI CHÚC ✓' : 'GỬI LỜI CHÚC & XÁC NHẬN'}
             </button>
           </form>
 
@@ -1225,104 +1411,41 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
             <div className="mt-8 space-y-3 border-t border-[#E6E1E4] pt-5 text-left">
               {wishes.slice(0, 3).map((w) => (
                 <div key={w.id} className="border-b border-[#EFEAED] pb-2.5">
-                  <p className="font-bodoni-editorial text-[14px] text-[#1D335B]">
+                  <p className="font-porcelain-serif text-[17px] text-[#1D335B]">
                     {w.name}
                   </p>
-                  <p className="mt-0.5 text-[11.5px] text-[#6E7C94]">{w.message}</p>
+                  <p className="mt-0.5 text-[13px] text-[#6E7C94]">{w.message}</p>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        {/* ============================================================
-            PHẦN 8: 06 FREQUENTLY ASKED QUESTIONS ACCORDION (f_039 - f_040)
-           ============================================================ */}
-        <section id="s9-faq" className="relative border-t border-[#ECE5E4] px-7 pb-14 pt-14">
-          <img
-            src={decorUrl('style9-corner-rose.jpg')}
-            alt=""
-            className="pointer-events-none absolute left-1 top-1 w-24 select-none mix-blend-multiply opacity-85"
-          />
-          <img
-            src={decorUrl('style9-corner-rose.jpg')}
-            alt=""
-            className="pointer-events-none absolute right-1 top-1 w-24 -scale-x-100 select-none mix-blend-multiply opacity-85"
-          />
-
-          <div className="text-center">
-            <p className="font-bodoni-editorial text-[11px] tracking-[0.2em] text-[#8E9AB0]">
-              06
-            </p>
-            <h2 className="font-bodoni-editorial mt-1 text-[23px] text-[#1D335B]">
-              Frequently Asked Questions
-            </h2>
-          </div>
-
-          <div className="mt-8 divide-y divide-[#E7E2E5] border-y border-[#E7E2E5] text-left">
-            {FAQ_ITEMS.map((item, idx) => {
-              const isOpen = openFaqIdx === idx;
-              return (
-                <div key={item.q} className="py-4">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
-                    className="cursor-pointer flex w-full items-center justify-between gap-4 text-left"
-                  >
-                    <span className="font-bodoni-editorial text-[16px] text-[#1D335B]">
-                      {item.q}
-                    </span>
-                    {isOpen ? (
-                      <Minus className="h-3.5 w-3.5 shrink-0 text-[#8693AA]" />
-                    ) : (
-                      <Plus className="h-3.5 w-3.5 shrink-0 text-[#8693AA]" />
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.p
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden pt-2.5 text-[12px] leading-relaxed text-[#6E7C94]"
-                      >
-                        {item.a}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ============================================================
-            PHẦN 9: FOOTER MONOGRAM + WITH LOVE + BÁNH CƯỚI 3 TẦNG MÀU SỨ XANH (f_042)
-           ============================================================ */}
+        {/* Chân thiệp */}
         <footer className="px-7 pb-10 pt-10 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[#DCE0EA] font-bodoni-editorial text-[18px] tracking-[0.06em] text-[#1D335B]">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[#DCE0EA] font-porcelain-serif text-[20px] tracking-[0.06em] text-[#1D335B]">
             {monogram}
           </div>
 
-          <p className="font-handwritten-minimal mt-7 text-[24px] text-[#6A7B9C]">
-            With love
+          <p className="font-handwritten-minimal mt-7 text-[28px] text-[#6A7B9C]">
+            Với tất cả yêu thương
           </p>
 
-          <h2 className="font-bodoni-editorial mt-2 text-[36px] leading-[1.08] text-[#1D335B]">
+          <h2 className="font-porcelain-serif mt-2 text-[40px] leading-[1.08] text-[#1D335B]">
             {data.groom.shortName} &amp;
             <br />
             {data.bride.shortName}
           </h2>
 
-          <p className="mt-4 text-[10px] uppercase tracking-[0.26em] text-[#8D98AC]">
+          <p className="mt-4 text-[12px] uppercase tracking-[0.22em] text-[#8D98AC]">
             {dottedDate}
           </p>
 
-          <p className="mt-7 text-[8.5px] uppercase tracking-[0.24em] text-[#9BA5B7]">
-            CONTACT US FOR INFO
+          <p className="mt-7 text-[10px] uppercase tracking-[0.2em] text-[#9BA5B7]">
+            THÔNG TIN LIÊN HỆ
           </p>
-          <p className="mt-1 text-[11px] text-[#7B889E]">
-            Thôn Phú Xá, Xã Văn Môn, Yên Phong, Bắc Ninh
+          <p className="mt-1 text-[13px] text-[#7B889E]">
+            123 Sài Thị - Hưng Yên
           </p>
 
           {/* Hình bánh cưới 3 tầng màu sứ xanh mờ dịu ở chân thiệp (f_042 video 2!) */}
@@ -1362,16 +1485,16 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
         )}
 
         {/* ============================================================
-            THANH TAB BAR DƯỚI ĐÁY CỐ ĐỊNH (HOME | LOCATION | GIFT LIST | RSVP) Y HỆT VIDEO 2
+            THANH ĐIỀU HƯỚNG DƯỚI ĐÁY
            ============================================================ */}
         {isEnvelopeOpen && (
           <nav className="fixed bottom-0 left-1/2 z-50 grid h-[46px] w-full max-w-[430px] -translate-x-1/2 grid-cols-4 items-center border-t border-[#EAE4E3] bg-[#FAF5F4]/95 px-2 backdrop-blur-md">
             {(
               [
-                ['home', 's9-home', 'HOME'],
-                ['location', 's9-location', 'LOCATION'],
-                ['gift-list', 's9-gift-list', 'GIFT LIST'],
-                ['rsvp', 's9-rsvp', 'RSVP'],
+                ['home', 's9-home', 'TRANG ĐẦU'],
+                ['location', 's9-location', 'ĐỊA ĐIỂM'],
+                ['gift-list', 's9-gift-list', 'MỪNG CƯỚI'],
+                ['rsvp', 's9-rsvp', 'LỜI CHÚC'],
               ] as const
             ).map(([tabKey, targetId, label]) => {
               const active = activeTab === tabKey;
@@ -1380,7 +1503,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
                   key={tabKey}
                   type="button"
                   onClick={() => scrollToSection(targetId)}
-                  className={`cursor-pointer mx-auto pb-0.5 text-[8.5px] font-medium uppercase tracking-[0.16em] transition-colors ${
+                  className={`cursor-pointer mx-auto pb-0.5 text-[9px] font-medium uppercase tracking-[0.1em] transition-colors ${
                     active
                       ? 'border-b border-[#1D335B] text-[#1D335B]'
                       : 'text-[#9AA3B5] hover:text-[#1D335B]'

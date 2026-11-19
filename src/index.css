@@ -209,6 +209,13 @@
   font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
 }
 
+/* Style 09 — nét serif mềm, thanh và hỗ trợ tiếng Việt tốt hơn */
+.font-porcelain-serif {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+
 /* Style 08 — Clean Vietnamese Sans for Lotus Metadata & Forms */
 .font-lotus-sans {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

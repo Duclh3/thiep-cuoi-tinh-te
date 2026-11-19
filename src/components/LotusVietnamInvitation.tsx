@@ -100,9 +100,8 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
   onOpenAdmin,
 }) => {
   const [nameInput, setNameInput] = useState(() => getInitialGuestName(guestName));
-  const [relationInput, setRelationInput] = useState('');
   const [messageInput, setMessageInput] = useState('');
-  const [attendance, setAttendance] = useState('');
+  const [attendance, setAttendance] = useState('Có, chắc chắn mình sẽ tham dự!');
   const [sentSuccess, setSentSuccess] = useState(false);
 
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
@@ -184,23 +183,18 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
 
   const handleSubmitRsvp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameInput.trim()) return;
+    if (!nameInput.trim() || !messageInput.trim()) return;
     const now = new Date();
-    const relPrefix = relationInput.trim() ? `[${relationInput.trim()}] ` : '';
-    const finalMsg =
-      messageInput.trim() ||
-      'Chúc hai bạn trăm năm hạnh phúc, mãi bên nhau viên mãn!';
     onAddWish({
       id: `lotus-wish-${Date.now()}`,
       name: nameInput.trim(),
-      message: `${relPrefix}${finalMsg}`,
-      attendance: attendance || 'Có, chắc chắn mình sẽ tham dự!',
+      message: messageInput.trim(),
+      attendance,
       createdAt: `${now.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
         minute: '2-digit',
       })} • ${now.toLocaleDateString('vi-VN')}`,
     });
-    setRelationInput('');
     setMessageInput('');
     setSentSuccess(true);
     confetti({
@@ -580,7 +574,7 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
               rel="noreferrer"
               className="font-lotus-sans absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded bg-white/95 px-2.5 py-1 text-[11px] font-medium text-[#1A73E8] shadow"
             >
-              Open in Maps ↗
+              Mở bản đồ ↗
             </a>
           </div>
         </section>
@@ -611,44 +605,38 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
                 required
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Tên của bạn là?"
+                placeholder="Tên của bạn là gì?"
                 className="font-lotus-sans w-full border border-[#6E776E] bg-white/35 px-3.5 py-2.5 text-[12.5px] text-[#242C24] placeholder-[#828A82] outline-none focus:border-[#182F18]"
               />
-              <input
-                type="text"
-                value={relationInput}
-                onChange={(e) => setRelationInput(e.target.value)}
-                placeholder="Bạn là gì của Dâu Rể nhỉ?"
-                className="font-lotus-sans w-full border border-[#6E776E] bg-white/35 px-3.5 py-2.5 text-[12.5px] text-[#242C24] placeholder-[#828A82] outline-none focus:border-[#182F18]"
-              />
-              <input
-                type="text"
+              <textarea
+                rows={3}
+                required
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Gửi lời chúc đến Dâu Rể nhé!"
-                className="font-lotus-sans w-full border border-[#6E776E] bg-white/35 px-3.5 py-2.5 text-[12.5px] text-[#242C24] placeholder-[#828A82] outline-none focus:border-[#182F18]"
+                placeholder="Bạn muốn gửi lời chúc gì tới cô dâu chú rể?"
+                className="font-lotus-sans w-full resize-none border border-[#6E776E] bg-white/35 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[#242C24] placeholder-[#828A82] outline-none focus:border-[#182F18]"
               />
               <select
                 value={attendance}
                 onChange={(e) => setAttendance(e.target.value)}
                 className="font-lotus-sans w-full border border-[#6E776E] bg-[#F6F5F0]/80 px-3.5 py-2.5 text-[12.5px] text-[#454D45] outline-none focus:border-[#182F18]"
               >
-                <option value="">Bạn có tham dự không?</option>
                 <option value="Có, chắc chắn mình sẽ tham dự!">
-                  Có, mình sẽ tham dự
+                  Bạn có tham dự không? — Có, chắc chắn tham dự
                 </option>
-                <option value="Rất tiếc, mình bận không thể tới dự">
-                  Rất tiếc, mình không thể tham dự
+                <option value="Mình bận mất rồi, xin gửi lời chúc hạnh phúc!">
+                  Mình bận mất rồi, xin gửi lời chúc hạnh phúc
                 </option>
+                <option value="Đang sắp xếp thời gian">Đang sắp xếp thời gian</option>
               </select>
 
-              {/* Hai nút GỬI NGAY & GỬI MỪNG CƯỚI viền mảnh đổ bóng nhẹ giống hệt video 1 */}
+              {/* Hai nút gửi lời chúc và gửi mừng cưới, giữ ngôn ngữ thiết kế hoa sen */}
               <div className="flex flex-col items-center gap-3.5 pt-2.5">
                 <button
                   type="submit"
-                  className="cursor-pointer font-lotus-sans w-[176px] border border-[#4D564D] bg-[#F7F6F1] py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-[#1E261E] shadow-[0_3px_10px_rgba(0,0,0,0.09)] transition-all hover:bg-[#182F18] hover:text-white active:scale-95"
+                  className="cursor-pointer font-lotus-sans w-[238px] border border-[#4D564D] bg-[#F7F6F1] py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-[#1E261E] shadow-[0_3px_10px_rgba(0,0,0,0.09)] transition-all hover:bg-[#182F18] hover:text-white active:scale-95"
                 >
-                  {sentSuccess ? 'ĐÃ GỬI THÀNH CÔNG ✓' : 'GỬI NGAY'}
+                  {sentSuccess ? 'ĐÃ GỬI THÀNH CÔNG ✓' : 'GỬI LỜI CHÚC & XÁC NHẬN'}
                 </button>
 
                 <button
