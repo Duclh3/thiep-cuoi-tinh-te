@@ -102,7 +102,7 @@ export default defineConfig(({ command }) => ({
 
         const baseHtml = fs.readFileSync(indexHtmlPath, 'utf-8')
         const ogImageUrl = process.env.VERCEL
-          ? 'https://thiep-cuoi-long-huyen-five.vercel.app/images/dang-dao/og-thumbnail.jpg'
+          ? 'https://thiep-cuoi-tinh-te.vercel.app/images/dang-dao/og-thumbnail.jpg'
           : 'https://duclh3.github.io/thiep-cuoi-long-huyen/images/dang-dao/og-thumbnail.jpg'
 
         const dangDaoHtml = baseHtml

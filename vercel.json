@@ -1,4 +1,30 @@
 {
+  "redirects": [
+    {
+      "source": "/hai-dang-anh-dao",
+      "has": [{ "type": "host", "value": "thiep-cuoi-long-huyen-five.vercel.app" }],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/hai-dang-anh-dao/",
+      "has": [{ "type": "host", "value": "thiep-cuoi-long-huyen-five.vercel.app" }],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/dang-dao",
+      "has": [{ "type": "host", "value": "thiep-cuoi-long-huyen-five.vercel.app" }],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/dang-dao/",
+      "has": [{ "type": "host", "value": "thiep-cuoi-long-huyen-five.vercel.app" }],
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/hai-dang-anh-dao", "destination": "/hai-dang-anh-dao/index.html" },
     { "source": "/hai-dang-anh-dao/", "destination": "/hai-dang-anh-dao/index.html" },
