@@ -361,15 +361,15 @@ const PorcelainTrifoldEnvelope: React.FC<{
     if (phase !== 'closed') return;
     soundEngine.playOpenChime();
     setPhase('untying');
-    // Nhịp 1: Nơ lụa bạc mở bung và trượt rơi mượt mà sang 2 góc dưới (0.65s)
-    schedulePhase(() => setPhase('doors'), 650);
+    // Nhịp 1: Nơ lụa bạc mở bung và trượt rơi mượt mà sang 2 góc dưới (0.72s)
+    schedulePhase(() => setPhase('doors'), 720);
     // Nhịp 2: Cánh cửa phong bì mở bung 3D sang hai bên (1.05s)
-    schedulePhase(() => setPhase('flaps'), 1700);
+    schedulePhase(() => setPhase('flaps'), 1800);
     // Nhịp 3: Nắp trên dưới mở và thiệp hoa sứ xanh phóng to toàn màn hình
-    schedulePhase(() => setPhase('zooming'), 2350);
+    schedulePhase(() => setPhase('zooming'), 2450);
     // Nhịp 4: Chữ thư mời trang trọng hiện lên
-    schedulePhase(() => setPhase('revealing'), 3050);
-    schedulePhase(() => onComplete(), 3650);
+    schedulePhase(() => setPhase('revealing'), 3150);
+    schedulePhase(() => onComplete(), 3750);
   };
 
   const phaseOrder = ['closed', 'untying', 'doors', 'flaps', 'zooming', 'revealing'] as const;
@@ -534,17 +534,18 @@ const PorcelainTrifoldEnvelope: React.FC<{
               animate={
                 isUntying
                   ? {
-                      x: -32,
-                      y: 300,
-                      rotate: -18,
-                      scaleY: 1.05,
-                      opacity: 0,
+                      x: [0, -8, -20, -32],
+                      y: [0, 45, 170, 320],
+                      rotate: [0, -5, -12, -20],
+                      scaleY: [1, 1.02, 1.05, 1.06],
+                      opacity: [1, 1, 0.9, 0],
                     }
                   : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
               }
               transition={{
-                duration: 0.65,
-                ease: [0.32, 0, 0.45, 1],
+                duration: 0.72,
+                times: [0, 0.25, 0.65, 1],
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               style={{
                 position: 'absolute',
@@ -568,17 +569,18 @@ const PorcelainTrifoldEnvelope: React.FC<{
               animate={
                 isUntying
                   ? {
-                      x: 32,
-                      y: 300,
-                      rotate: 18,
-                      scaleY: 1.05,
-                      opacity: 0,
+                      x: [0, 8, 20, 32],
+                      y: [0, 45, 170, 320],
+                      rotate: [0, 5, 12, 20],
+                      scaleY: [1, 1.02, 1.05, 1.06],
+                      opacity: [1, 1, 0.9, 0],
                     }
                   : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
               }
               transition={{
-                duration: 0.65,
-                ease: [0.32, 0, 0.45, 1],
+                duration: 0.72,
+                times: [0, 0.25, 0.65, 1],
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               style={{
                 position: 'absolute',
