@@ -183,12 +183,12 @@ const PorcelainRotatingGallery: React.FC<{
   return (
     <div ref={viewportRef} className="relative z-10 mt-8 flex flex-col items-center">
       <div
-        className="relative flex h-[285px] w-full items-center justify-center overflow-visible select-none"
-        style={{ perspective: '1150px' }}
+        className="relative flex h-[300px] w-full items-center justify-center overflow-visible select-none"
+        style={{ perspective: '1300px' }}
       >
         <div
           ref={trackRef}
-          className="relative h-[184px] w-[132px] will-change-transform [transform-style:preserve-3d]"
+          className="relative h-[200px] w-[144px] will-change-transform [transform-style:preserve-3d]"
           style={{ transform: 'rotateX(-3deg) rotateY(0deg)' }}
         >
           {photos.map((url, idx) => (
@@ -197,9 +197,9 @@ const PorcelainRotatingGallery: React.FC<{
               type="button"
               onClick={() => onSelect(url)}
               aria-label={`Mở ảnh cưới ${idx + 1}`}
-              className="cursor-pointer group absolute inset-0 border border-[#8FA3C8] bg-[#FCFAF8] p-1.5 pb-7 shadow-[0_18px_38px_rgba(18,42,82,0.28)] [backface-visibility:visible]"
+              className="cursor-pointer group absolute inset-0 border border-[#8FA3C8] bg-[#FCFAF8] p-1.5 pb-7 shadow-[0_14px_28px_rgba(18,42,82,0.2)] [backface-visibility:hidden]"
               style={{
-                transform: `rotateY(${idx * angleStep}deg) translateZ(var(--porcelain-carousel-z, 178px))`,
+                transform: `rotateY(${idx * angleStep}deg) translateZ(var(--porcelain-carousel-z, 192px))`,
               }}
             >
               <span className="block h-full overflow-hidden border border-[#D9E0EC] bg-[#E9EDF4]">
@@ -212,7 +212,7 @@ const PorcelainRotatingGallery: React.FC<{
                 />
               </span>
               <span className="font-porcelain-serif absolute inset-x-1 bottom-1.5 truncate text-center text-[12px] italic text-[#4F648A]">
-                Kỷ niệm của chúng mình
+                Kỷ niệm {idx + 1}
               </span>
             </button>
           ))}
@@ -270,7 +270,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
     window.setTimeout(() => setPhase('doors'), 2350);
     window.setTimeout(() => setPhase('flaps'), 4200);
     window.setTimeout(() => setPhase('zooming'), 5700);
-    window.setTimeout(() => onComplete(), 7550);
+    window.setTimeout(() => onComplete(), 7350);
   };
 
   const isUntying = phase !== 'closed';
@@ -281,27 +281,25 @@ const PorcelainTrifoldEnvelope: React.FC<{
   return (
     <motion.div
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
+      transition={{ duration: 0.18, ease: 'linear' }}
       onClick={handleOpen}
-      className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#F3ECEA] px-4 select-none"
+      className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#F3ECEA] select-none"
     >
-      {/* Khung phong bì đứng 3 cánh gập 3D */}
-      <motion.div
-        animate={isZooming ? { scale: 1.22, opacity: 1 } : { scale: 1, opacity: 1 }}
-        transition={{ duration: 1.75, ease: [0.22, 1, 0.36, 1] }}
-        className="relative aspect-[9/14.2] w-full max-w-[355px] [perspective:1800px]"
-      >
-        {/* Bóng đổ nền ấm dưới phong bì */}
-        <div className="pointer-events-none absolute -inset-2 rounded-sm bg-[#2D1F18]/12 blur-2xl" />
-
+      <div className="relative flex h-full w-full max-w-[430px] items-center justify-center overflow-hidden px-4">
+        {/* Khung phong bì đứng 3 cánh gập 3D */}
+        <motion.div
+          animate={isZooming ? { scale: 1.65, opacity: 1 } : { scale: 1, opacity: 1 }}
+          transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
+          className="relative aspect-[9/14.2] w-full max-w-[355px] [perspective:1800px]"
+        >
         {/* THÂN PHONG BÌ TRONG (Đựng tấm thiệp hoa sứ xanh thực sự bên trong!) */}
-        <div className="relative h-full w-full overflow-visible bg-[#EFE4D6] shadow-[0_24px_65px_rgba(40,28,22,0.22)]">
+        <div className="relative h-full w-full overflow-visible bg-[#EFE4D6]">
           {/* Nắp gập hình thang phía trên (mở bung ra sau khi cánh mở) */}
           <motion.div
             animate={areFlapsOpen ? { rotateX: 118, y: -12, opacity: 0.12 } : { rotateX: 0, y: 0, opacity: 1 }}
             transition={{ duration: 1.5, ease: [0.45, 0.05, 0.25, 1] }}
             style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[11%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,88%_100%,12%_100%)] shadow-inner"
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[11%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,88%_100%,12%_100%)]"
           />
 
           {/* Nắp gập hình thang phía dưới */}
@@ -314,34 +312,45 @@ const PorcelainTrifoldEnvelope: React.FC<{
 
           {/* TẤM THIỆP HOA XANH SỨ TRẮNG BÊN TRONG — LỘ RA NGAY KHI 2 CÁNH MỞ! */}
           <motion.div
-            animate={isZooming ? { scale: 1.18 } : { scale: 1 }}
-            transition={{ duration: 1.75, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-[4.5%] z-10 overflow-hidden bg-[#FAF5F4] shadow-inner"
+            animate={isZooming ? { scale: 1.16 } : { scale: 1 }}
+            transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-[4.5%] z-10 overflow-hidden bg-[#FAF5F4]"
           >
-            <img
+            <motion.img
               src={decorUrl('style9-porcelain-hero-frame.jpg')}
               alt=""
+              animate={isZooming ? { scaleX: 0.88 } : { scaleX: 1 }}
+              transition={{ duration: 1.65, ease: [0.22, 1, 0.36, 1] }}
               className="h-full w-full object-cover mix-blend-multiply"
             />
-            <div className="absolute inset-[18%_20%] bg-[#FAF5F4]/95">
+            <div className="absolute inset-[27%_29%] bg-[#FAF5F4]/95">
               <BaroqueInnerFrameSvg />
               <motion.div
                 animate={isZooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                 transition={{ duration: 1.2, delay: 0.25 }}
                 className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#1D335B]"
               >
-                <p className="text-[7px] uppercase tracking-[0.2em] text-[#71819B]">
+                <p className="text-[5.5px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#71819B]">
+                  BẰNG TẤT CẢ YÊU THƯƠNG
+                  <br />
                   TRÂN TRỌNG KÍNH MỜI
                 </p>
                 <p className="font-porcelain-serif mt-2 text-[22px] leading-none">
                   {data.groom.shortName}
                 </p>
-                <span className="font-handwritten-minimal my-0.5 text-[14px] text-[#71819B]">&amp;</span>
+                <span className="font-handwritten-minimal my-0.5 text-[11px] text-[#71819B]">&amp;</span>
                 <p className="font-porcelain-serif text-[22px] leading-none">
                   {data.bride.shortName}
                 </p>
-                <p className="font-porcelain-serif mt-3 text-[8px] tracking-[0.16em]">
-                  {data.weddingDate.displayDate}
+                <div className="my-2 h-px w-7 bg-[#C4CEDE]" />
+                <p className="font-porcelain-serif text-[8.5px] tracking-[0.2em]">
+                  {data.weddingDate.displayDate.split('.').join(' · ')}
+                </p>
+                <p className="font-handwritten-minimal mt-1 text-[11px] text-[#6D7FA0]">
+                  Hưng Yên · Việt Nam
+                </p>
+                <p className="mt-2.5 text-[5.5px] uppercase tracking-[0.22em] text-[#6E7F9E]">
+                  CUỘN XUỐNG
                 </p>
               </motion.div>
             </div>
@@ -355,11 +364,10 @@ const PorcelainTrifoldEnvelope: React.FC<{
                     rotateY: -130,
                     x: '-46%',
                     opacity: 0,
-                    boxShadow: '-12px 16px 35px rgba(35,24,16,0.12)',
                   }
                 : areDoorsOpen
-                ? { rotateY: -130, boxShadow: '-12px 16px 35px rgba(35,24,16,0.22)' }
-                : { rotateY: 0, boxShadow: '2px 0 6px rgba(55,40,28,0.12)' }
+                ? { rotateY: -130 }
+                : { rotateY: 0 }
             }
             transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
@@ -398,11 +406,10 @@ const PorcelainTrifoldEnvelope: React.FC<{
                     rotateY: 130,
                     x: '46%',
                     opacity: 0,
-                    boxShadow: '12px 16px 35px rgba(35,24,16,0.12)',
                   }
                 : areDoorsOpen
-                ? { rotateY: 130, boxShadow: '12px 16px 35px rgba(35,24,16,0.22)' }
-                : { rotateY: 0, boxShadow: '-2px 0 6px rgba(55,40,28,0.10)' }
+                ? { rotateY: 130 }
+                : { rotateY: 0 }
             }
             transition={{ duration: 2.05, ease: [0.45, 0.05, 0.25, 1] }}
             style={{
@@ -454,12 +461,12 @@ const PorcelainTrifoldEnvelope: React.FC<{
           <motion.div
             animate={isUntying ? { x: '-105%', opacity: 0 } : { x: 0, opacity: 1 }}
             transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
-            className="pointer-events-none absolute left-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#F5F5F6] via-[#BFC2C9] to-[#F8F8F8] shadow-[0_7px_10px_rgba(40,36,34,0.16)]"
+            className="pointer-events-none absolute left-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#D7D8DC] via-[#B8BAC1] to-[#D1D2D6]"
           />
           <motion.div
             animate={isUntying ? { x: '105%', opacity: 0 } : { x: 0, opacity: 1 }}
             transition={{ duration: 1.35, ease: [0.42, 0, 0.58, 1] }}
-            className="pointer-events-none absolute right-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#F5F5F6] via-[#BFC2C9] to-[#F8F8F8] shadow-[0_7px_10px_rgba(40,36,34,0.16)]"
+            className="pointer-events-none absolute right-[-2%] top-[45.5%] z-40 h-[9%] w-[52%] bg-gradient-to-b from-[#D7D8DC] via-[#B8BAC1] to-[#D1D2D6]"
           />
           <motion.div
             animate={
@@ -483,7 +490,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
             <img
               src={decorUrl('style9-silver-bow.png')}
               alt="Nơ lụa bạc"
-              className="w-full drop-shadow-[0_12px_18px_rgba(32,26,22,0.28)] [clip-path:inset(0_18%_0_18%)]"
+              className="w-full [clip-path:inset(0_25%_0_25%)]"
             />
           </motion.div>
 
@@ -497,8 +504,9 @@ const PorcelainTrifoldEnvelope: React.FC<{
           >
             CHẠM VÀO NƠ ĐỂ MỞ THIỆP
           </motion.p>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 };
@@ -518,7 +526,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'location' | 'gift-list' | 'rsvp'>('home');
 
-  const [showAccount, setShowAccount] = useState(false);
+  const [showAccount, setShowAccount] = useState(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
@@ -545,6 +553,18 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
     if (initial) setGuestInput(initial);
   }, [guestName]);
 
+  // Giữ trang nền ở đúng đầu bìa trong lúc phong bao đang mở. Nếu không khóa,
+  // thao tác cuộn trong lúc chờ animation có thể khiến cảnh zoom đáp xuống giữa trang.
+  useEffect(() => {
+    if (isEnvelopeOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isEnvelopeOpen]);
+
   // Tải trước toàn bộ họa tiết sứ xanh + nơ lụa bạc + ảnh Style 7
   useEffect(() => {
     const urls = [
@@ -556,7 +576,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
       decorUrl('style9-dancing-couple.jpg'),
       decorUrl('style9-wedding-cake.jpg'),
       data.sectionImages.hero,
-      ...data.album9Images.slice(0, 11).map((p) => p.url),
+      ...data.album9Images.slice(0, 7).map((p) => p.url),
     ];
     return preloadAndDecodeImages(urls, { delayMs: 150, concurrency: 3 });
   }, [data]);
@@ -589,6 +609,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
   }, [isEnvelopeOpen]);
 
   const handleCompleteEnvelope = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     setIsEnvelopeOpen(true);
     onStartMusic();
   };
@@ -641,7 +662,7 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
 
   const coupleGallery = Array.from(
     new Set(
-      [data.sectionImages.hero, ...data.album9Images.slice(0, 11).map((photo) => photo.url)].filter(
+      [data.sectionImages.hero, ...data.album9Images.slice(0, 7).map((photo) => photo.url)].filter(
         Boolean
       ) as string[]
     )
@@ -778,84 +799,48 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
           />
 
           {/* Tấm thẻ trung tâm có khung viền đôi hoa văn góc Baroque */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={isEnvelopeOpen ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          <div
             className="relative z-10 flex w-[66%] min-w-[238px] max-w-[268px] flex-col items-center justify-center bg-[#FAF5F4]/95 px-5 py-10 shadow-[0_6px_30px_rgba(24,44,82,0.08)]"
           >
             <BaroqueInnerFrameSvg />
 
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-              transition={{ duration: 0.65, delay: 0.35 }}
-              className="text-[10px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#7A8AA6]"
-            >
+            <p className="text-[10px] font-medium uppercase leading-[1.6] tracking-[0.18em] text-[#7A8AA6]">
               BẰNG TẤT CẢ YÊU THƯƠNG
               <br />
               TRÂN TRỌNG KÍNH MỜI
-            </motion.p>
+            </p>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 12 }}
-              animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-              className="font-porcelain-serif mt-4 text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]"
-            >
+            <h1 className="font-porcelain-serif mt-4 text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]">
               {data.groom.shortName}
-            </motion.h1>
+            </h1>
 
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={isEnvelopeOpen ? { opacity: 0.75 } : { opacity: 0 }}
-              transition={{ duration: 0.6, delay: 0.62 }}
-              className="font-handwritten-minimal my-0.5 text-[21px] text-[#667899]"
-            >
+            <span className="font-handwritten-minimal my-0.5 text-[21px] text-[#667899] opacity-75">
               &amp;
-            </motion.span>
+            </span>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 12 }}
-              animate={isEnvelopeOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-              transition={{ duration: 0.8, delay: 0.68 }}
-              className="font-porcelain-serif text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]"
-            >
+            <h1 className="font-porcelain-serif text-[42px] font-medium leading-[1.02] tracking-[-0.01em] text-[#1D335B]">
               {data.bride.shortName}
-            </motion.h1>
+            </h1>
 
             <div className="my-4 h-px w-14 bg-[#C4CEDE]" />
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={isEnvelopeOpen ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.7, delay: 0.82 }}
-              className="font-porcelain-serif text-[16px] tracking-[0.2em] text-[#4C6289]"
-            >
+            <p className="font-porcelain-serif text-[16px] tracking-[0.2em] text-[#4C6289]">
               {dottedDate}
-            </motion.p>
+            </p>
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={isEnvelopeOpen ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.7, delay: 0.92 }}
-              className="font-handwritten-minimal mt-1.5 text-[21px] text-[#6D7FA0]"
-            >
+            <p className="font-handwritten-minimal mt-1.5 text-[21px] text-[#6D7FA0]">
               Hưng Yên · Việt Nam
-            </motion.p>
+            </p>
 
-            <motion.button
+            <button
               type="button"
               onClick={() => scrollToSection('s9-countdown')}
-              initial={{ opacity: 0 }}
-              animate={isEnvelopeOpen ? { opacity: 0.75 } : { opacity: 0 }}
-              transition={{ duration: 0.7, delay: 1.05 }}
-              className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E]"
+              className="cursor-pointer mt-5 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.22em] text-[#6E7F9E] opacity-75"
             >
               <span>CUỘN XUỐNG</span>
               <ChevronDown className="h-3 w-3 animate-bounce" />
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         </section>
 
         {/* ============================================================
@@ -1387,16 +1372,19 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
               <label htmlFor="s9-attendance" className="block text-[11px] uppercase tracking-[0.18em] text-[#95A0B3]">
                 3. Bạn có thể tham dự lễ cưới không?
               </label>
-              <select
-                id="s9-attendance"
-                value={attendanceAnswer}
-                onChange={(e) => setAttendanceAnswer(e.target.value)}
-                className="mt-2 w-full appearance-none border border-[#D8DCE6] bg-white/70 px-4 py-3 text-[14px] text-[#35486A] outline-none transition focus:border-[#7890B8] focus:ring-2 focus:ring-[#7890B8]/15"
-              >
-                <option value="Có, chắc chắn mình sẽ tham dự!">Có, chắc chắn mình sẽ tham dự!</option>
-                <option value="Rất tiếc, mình không thể tham dự">Rất tiếc, mình không thể tham dự</option>
-                <option value="Mình sẽ phản hồi lại sớm">Mình sẽ phản hồi lại sớm</option>
-              </select>
+              <div className="relative mt-2">
+                <select
+                  id="s9-attendance"
+                  value={attendanceAnswer}
+                  onChange={(e) => setAttendanceAnswer(e.target.value)}
+                  className="w-full appearance-none border border-[#D8DCE6] bg-white/70 py-3 pl-4 pr-12 text-[14px] text-[#35486A] outline-none transition focus:border-[#7890B8] focus:ring-2 focus:ring-[#7890B8]/15"
+                >
+                  <option value="Có, chắc chắn mình sẽ tham dự!">Có, chắc chắn mình sẽ tham dự!</option>
+                  <option value="Rất tiếc, mình không thể tham dự">Rất tiếc, mình không thể tham dự</option>
+                  <option value="Mình sẽ phản hồi lại sớm">Mình sẽ phản hồi lại sớm</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6F7F99]" />
+              </div>
             </div>
 
             <button

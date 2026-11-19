@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import {
   ArrowUp,
   Check,
+  ChevronDown,
   Copy,
   Download,
   Lock,
@@ -104,7 +105,6 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
   const [attendance, setAttendance] = useState('Có, chắc chắn mình sẽ tham dự!');
   const [sentSuccess, setSentSuccess] = useState(false);
 
-  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const userMutedManuallyRef = React.useRef(false);
@@ -616,38 +616,108 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
                 placeholder="Bạn muốn gửi lời chúc gì tới cô dâu chú rể?"
                 className="font-lotus-sans w-full resize-none border border-[#6E776E] bg-white/35 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[#242C24] placeholder-[#828A82] outline-none focus:border-[#182F18]"
               />
-              <select
-                value={attendance}
-                onChange={(e) => setAttendance(e.target.value)}
-                className="font-lotus-sans w-full border border-[#6E776E] bg-[#F6F5F0]/80 px-3.5 py-2.5 text-[12.5px] text-[#454D45] outline-none focus:border-[#182F18]"
-              >
-                <option value="Có, chắc chắn mình sẽ tham dự!">
-                  Bạn có tham dự không? — Có, chắc chắn tham dự
-                </option>
-                <option value="Mình bận mất rồi, xin gửi lời chúc hạnh phúc!">
-                  Mình bận mất rồi, xin gửi lời chúc hạnh phúc
-                </option>
-                <option value="Đang sắp xếp thời gian">Đang sắp xếp thời gian</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={attendance}
+                  onChange={(e) => setAttendance(e.target.value)}
+                  className="font-lotus-sans w-full appearance-none border border-[#6E776E] bg-[#F6F5F0]/80 py-2.5 pl-3.5 pr-12 text-[12.5px] text-[#454D45] outline-none focus:border-[#182F18]"
+                >
+                  <option value="Có, chắc chắn mình sẽ tham dự!">
+                    Bạn có tham dự không? — Có, chắc chắn tham dự
+                  </option>
+                  <option value="Mình bận mất rồi, xin gửi lời chúc hạnh phúc!">
+                    Mình bận mất rồi, xin gửi lời chúc hạnh phúc
+                  </option>
+                  <option value="Đang sắp xếp thời gian">Đang sắp xếp thời gian</option>
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 stroke-[1.5] text-[#4F5B50]"
+                />
+              </div>
 
-              {/* Hai nút gửi lời chúc và gửi mừng cưới, giữ ngôn ngữ thiết kế hoa sen */}
-              <div className="flex flex-col items-center gap-3.5 pt-2.5">
+              <div className="flex flex-col items-center pt-2.5">
                 <button
                   type="submit"
                   className="cursor-pointer font-lotus-sans w-[238px] border border-[#4D564D] bg-[#F7F6F1] py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-[#1E261E] shadow-[0_3px_10px_rgba(0,0,0,0.09)] transition-all hover:bg-[#182F18] hover:text-white active:scale-95"
                 >
                   {sentSuccess ? 'ĐÃ GỬI THÀNH CÔNG ✓' : 'GỬI LỜI CHÚC & XÁC NHẬN'}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsGiftModalOpen(true)}
-                  className="cursor-pointer font-lotus-sans w-[152px] rounded-md border border-[#4D564D] bg-[#F7F6F1] py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-[#1E261E] shadow-[0_3px_10px_rgba(0,0,0,0.09)] transition-all hover:bg-[#4F5B50] hover:text-white active:scale-95"
-                >
-                  GỬI MỪNG CƯỚI
-                </button>
               </div>
             </form>
+
+            {/* Hộp quà mừng cưới luôn hiển thị, không che nội dung thiệp bằng modal. */}
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.65 }}
+              className="relative z-10 mt-7 border-y border-[#8E9B8E]/60 py-6 text-center"
+            >
+              <p className="font-condensed-minimal text-[10.5px] uppercase tracking-[0.16em] text-[#4F5E4F]">
+                HỘP QUÀ MỪNG CƯỚI
+              </p>
+              <h3 className="font-handwritten-minimal mt-1 text-[32px] text-[#1D321D]">
+                Gửi Mừng Cưới
+              </h3>
+              <p className="font-lotus-sans mx-auto mt-1 max-w-[330px] text-[11.5px] leading-relaxed text-[#525C52]">
+                Cảm ơn tình cảm và lời chúc phúc tốt đẹp của bạn dành cho {data.groom.shortName} &amp; {data.bride.shortName}.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                {[
+                  { key: 'groom', item: data.groomQrGift, file: 'QR-Chu-Re.png' },
+                  { key: 'bride', item: data.brideQrGift, file: 'QR-Co-Dau.png' },
+                ].map(({ key, item, file }) => (
+                  <div
+                    key={key}
+                    className="min-w-0 border border-[#C6CFC6] bg-white/70 px-2 py-3 shadow-[0_3px_12px_rgba(39,57,39,0.07)]"
+                  >
+                    <p className="font-lotus-sans truncate text-[9.5px] font-semibold uppercase tracking-[0.05em] text-[#1D321D]">
+                      {item.roleLabel}
+                    </p>
+                    <img
+                      src={item.qrImageUrl}
+                      alt={`Mã QR mừng cưới ${item.roleLabel}`}
+                      className="mx-auto mt-2.5 aspect-square w-full max-w-[126px] border border-[#E5EAE5] bg-white object-contain p-1"
+                    />
+                    <p className="font-lotus-sans mt-2.5 truncate text-[10.5px] font-bold text-[#1F271F]">
+                      {item.accountHolder}
+                    </p>
+                    <p className="font-lotus-sans mt-0.5 break-all text-[10.5px] text-[#4D574D]">
+                      {item.accountNumber}
+                    </p>
+                    <p className="font-lotus-sans mt-0.5 min-h-[28px] text-[9px] leading-snug text-[#6E776E]">
+                      {item.bankBranch}
+                    </p>
+                    <div className="mt-2.5 flex flex-col items-stretch gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyStk(key, item.accountNumber)}
+                        className="cursor-pointer font-lotus-sans inline-flex items-center justify-center gap-1 border border-[#4D5B4D] px-1.5 py-1.5 text-[9.5px] font-medium text-[#1D321D] transition-colors hover:bg-[#1D321D] hover:text-white"
+                      >
+                        {copiedKey === key ? (
+                          <>
+                            <Check className="h-3 w-3" /> Đã chép
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" /> Sao chép STK
+                          </>
+                        )}
+                      </button>
+                      <a
+                        href={item.qrImageUrl}
+                        download={file}
+                        className="font-lotus-sans inline-flex items-center justify-center gap-1 bg-[#182F18] px-1.5 py-1.5 text-[9.5px] font-medium text-white"
+                      >
+                        <Download className="h-3 w-3" /> Tải mã QR
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
 
             {/* Lời chúc gần đây nếu đã có */}
             {wishes.length > 0 && (
@@ -798,104 +868,6 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
           </button>
         </div>
       </main>
-
-      {/* MODAL GỬI MỪNG CƯỚI (QR CHÚ RỂ & CÔ DÂU STYLE 7) */}
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <AnimatePresence>
-            {isGiftModalOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsGiftModalOpen(false)}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.94, y: 16 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.94, y: 16 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="relative max-h-[90vh] w-full max-w-[410px] overflow-y-auto rounded-xl border border-[#8E9B8E] bg-[#F6F5F0] p-5 text-center shadow-2xl"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setIsGiftModalOpen(false)}
-                    aria-label="Đóng"
-                    className="cursor-pointer absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full border border-[#8E9B8E]/50 text-[#2A332A]"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-
-                  <p className="font-condensed-minimal text-[11px] uppercase tracking-[0.16em] text-[#4F5E4F]">
-                    HỘP QUÀ MỪNG CƯỚI
-                  </p>
-                  <h3 className="font-handwritten-minimal mt-1 text-[34px] text-[#1D321D]">
-                    Gửi Mừng Cưới
-                  </h3>
-                  <p className="font-lotus-sans mx-auto mt-1 max-w-xs text-[11.5px] leading-relaxed text-[#525C52]">
-                    Cảm ơn tình cảm và lời chúc phúc tốt đẹp của bạn dành cho {data.groom.shortName} &amp; {data.bride.shortName}.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {[
-                      { key: 'groom', item: data.groomQrGift, file: 'QR-Chu-Re.png' },
-                      { key: 'bride', item: data.brideQrGift, file: 'QR-Co-Dau.png' },
-                    ].map(({ key, item, file }) => (
-                      <div
-                        key={key}
-                        className="rounded-lg border border-[#C6CFC6] bg-white p-3.5 shadow-sm"
-                      >
-                        <p className="font-lotus-sans text-[10px] font-semibold uppercase tracking-[0.06em] text-[#1D321D]">
-                          {item.roleLabel}
-                        </p>
-                        <img
-                          src={item.qrImageUrl}
-                          alt={item.accountHolder}
-                          className="mx-auto mt-2.5 h-36 w-36 rounded border border-[#E5EAE5] object-contain p-1"
-                        />
-                        <p className="font-lotus-sans mt-2.5 text-[11px] font-bold text-[#1F271F]">
-                          {item.accountHolder}
-                        </p>
-                        <p className="font-lotus-sans text-[11px] text-[#4D574D]">
-                          {item.accountNumber}
-                        </p>
-                        <p className="font-lotus-sans mt-0.5 text-[10px] text-[#6E776E]">
-                          {item.bankBranch}
-                        </p>
-                        <div className="mt-3 flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyStk(key, item.accountNumber)}
-                            className="cursor-pointer font-lotus-sans inline-flex items-center gap-1 rounded border border-[#4D5B4D] px-2.5 py-1 text-[10px] font-medium text-[#1D321D] hover:bg-[#1D321D] hover:text-white"
-                          >
-                            {copiedKey === key ? (
-                              <>
-                                <Check className="h-3 w-3" /> Đã chép
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3" /> Copy STK
-                              </>
-                            )}
-                          </button>
-                          <a
-                            href={item.qrImageUrl}
-                            download={file}
-                            className="font-lotus-sans inline-flex items-center gap-1 rounded bg-[#182F18] px-2.5 py-1 text-[10px] font-medium text-white"
-                          >
-                            <Download className="h-3 w-3" /> Tải QR
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
 
       {/* LIGHTBOX XEM ẢNH ALBUM PHÓNG TO */}
       {typeof document !== 'undefined' &&
