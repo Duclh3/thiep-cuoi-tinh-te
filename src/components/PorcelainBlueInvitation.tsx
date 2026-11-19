@@ -361,11 +361,15 @@ const PorcelainTrifoldEnvelope: React.FC<{
     if (phase !== 'closed') return;
     soundEngine.playOpenChime();
     setPhase('untying');
-    schedulePhase(() => setPhase('doors'), 2750);
-    schedulePhase(() => setPhase('flaps'), 4850);
-    schedulePhase(() => setPhase('zooming'), 5800);
-    schedulePhase(() => setPhase('revealing'), 7000);
-    schedulePhase(() => onComplete(), 7700);
+    // Nhịp 1: Nơ tháo và 2 dải lụa rũ rơi xuống hai bên (1.1s)
+    schedulePhase(() => setPhase('doors'), 1100);
+    // Nhịp 2: Cánh cửa phong bì mở bung 3D sang hai bên (1.3s)
+    schedulePhase(() => setPhase('flaps'), 2400);
+    // Nhịp 3: Nắp trên dưới mở và thiệp hoa sứ xanh phóng to toàn màn hình
+    schedulePhase(() => setPhase('zooming'), 3150);
+    // Nhịp 4: Chữ thư mời trang trọng hiện lên
+    schedulePhase(() => setPhase('revealing'), 4000);
+    schedulePhase(() => onComplete(), 4700);
   };
 
   const phaseOrder = ['closed', 'untying', 'doors', 'flaps', 'zooming', 'revealing'] as const;
@@ -394,7 +398,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
         }
         transition={
           isZooming
-            ? { duration: 1.2, ease: [0.22, 1, 0.36, 1] }
+            ? { duration: 0.9, ease: [0.22, 1, 0.36, 1] }
             : { duration: 0.1 }
         }
         className="pointer-events-none absolute left-1/2 top-0 z-10 h-[calc(100svh-46px)] w-full max-w-[430px] -translate-x-1/2 origin-center overflow-hidden"
@@ -415,7 +419,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
           {/* Nắp gập hình thang phía trên (mở bung ra sau khi cánh mở) */}
           <motion.div
             animate={areFlapsOpen ? { rotateX: 118, y: -12, opacity: 1 } : { rotateX: 0, y: 0, opacity: 1 }}
-            transition={{ duration: 0.95, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 0.75, ease: [0.35, 0.05, 0.2, 1] }}
             style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
             className="pointer-events-none absolute inset-x-0 top-0 z-30 h-[17%] bg-gradient-to-b from-[#EDE0D0] to-[#F5ECDF] [clip-path:polygon(0_0,100%_0,82%_100%,18%_100%)]"
           />
@@ -423,7 +427,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
           {/* Nắp gập hình thang phía dưới */}
           <motion.div
             animate={areFlapsOpen ? { rotateX: -118, y: 12, opacity: 1 } : { rotateX: 0, y: 0, opacity: 1 }}
-            transition={{ duration: 0.95, delay: areFlapsOpen ? 0.08 : 0, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 0.75, delay: areFlapsOpen ? 0.06 : 0, ease: [0.35, 0.05, 0.2, 1] }}
             style={{ transformOrigin: 'bottom center', transformStyle: 'preserve-3d' }}
             className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[12%] bg-gradient-to-t from-[#E8DAC8] to-[#F4EBDE] [clip-path:polygon(12%_0,88%_0,100%_100%,0_100%)]"
           />
@@ -440,7 +444,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
                 ? { rotateY: -110 }
                 : { rotateY: 0 }
             }
-            transition={{ duration: 2.1, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 1.25, ease: [0.35, 0.05, 0.2, 1] }}
             style={{
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
@@ -476,7 +480,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
                 ? { rotateY: 110 }
                 : { rotateY: 0 }
             }
-            transition={{ duration: 2.1, delay: areDoorsOpen ? 0.12 : 0, ease: [0.45, 0.05, 0.25, 1] }}
+            transition={{ duration: 1.25, delay: areDoorsOpen ? 0.06 : 0, ease: [0.35, 0.05, 0.2, 1] }}
             style={{
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
@@ -514,7 +518,7 @@ const PorcelainTrifoldEnvelope: React.FC<{
           {/* Chữ dập chìm tinh tế phía trên nơ (mờ dần ngay khi mở) */}
           <motion.div
             animate={isUntying ? { opacity: 0 } : { opacity: 0.62 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="pointer-events-none absolute inset-x-0 top-[15%] z-30 text-center"
           >
             <p className="font-handwritten-minimal text-[27px] text-[#8F7E6C]">
@@ -522,99 +526,74 @@ const PorcelainTrifoldEnvelope: React.FC<{
             </p>
           </motion.div>
 
-          {/* Nơ nguyên vẹn trước khi chạm. Ảnh đã chứa cả dải lụa ngang thật. */}
-          <motion.div
-            animate={
-              isUntying
-                ? {
-                    y: [0, 1, 6, 18, 32],
-                    scaleX: [1, 1, 1.01, 1, 0.98],
-                    scaleY: [1, 1.01, 1.04, 1.08, 1.12],
-                    opacity: [1, 1, 1, 1, 0],
-                  }
-                : { y: 0, scaleX: 1, scaleY: 1, opacity: 1 }
-            }
-            transition={{
-              duration: 1.45,
-              times: [0, 0.18, 0.45, 0.75, 1],
-              ease: [0.42, 0, 0.58, 1],
-            }}
-            style={{ transformOrigin: '50% 36%' }}
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
-          >
-            <img
-              src={decorUrl('style9-silver-bow.png')}
-              alt="Nơ lụa bạc"
-              className="w-full"
-            />
-          </motion.div>
+          {/* 1. Nơ nguyên vẹn ở trạng thái đóng (biến mất ngay khi người dùng chạm mở) */}
+          {!isUntying && (
+            <div className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]">
+              <img
+                src={decorUrl('style9-silver-bow.png')}
+                alt="Nơ lụa bạc"
+                className="w-full drop-shadow-[0_8px_18px_rgba(20,30,50,0.18)]"
+              />
+            </div>
+          )}
 
-          {/* Khi tháo, hai nửa nơ rũ xuống và rơi lệch nhau như vật thật trong video. */}
-          <motion.div
-            animate={
-              isUntying
-                ? {
-                    x: [0, 0, 0, -2, -9, -24],
-                    y: [0, 2, 8, 32, 160, 380],
-                    scaleX: [1, 1.01, 1, 0.98, 0.84, 0.68],
-                    scaleY: [1, 1.02, 1.07, 1.15, 1.05, 0.86],
-                    rotate: [0, 0, 0, -3, -24, -48],
-                    opacity: [0, 0, 0, 0, 1, 0.78, 0],
-                  }
-                : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
-            }
-            transition={{
-              duration: 2.55,
-              times: [0, 0.18, 0.43, 0.56, 0.76, 1],
-              ease: [0.42, 0, 0.58, 1],
-              opacity: {
-                duration: 2.55,
-                times: [0, 0.18, 0.43, 0.52, 0.58, 0.76, 1],
-                ease: [0.42, 0, 0.58, 1],
-              },
-            }}
-            style={{ transformOrigin: '50% 36%' }}
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
-          >
-            <img
-              src={decorUrl('style9-silver-bow.png')}
-              alt=""
-              className="w-full [clip-path:inset(0_50%_0_0)]"
-            />
-          </motion.div>
+          {/* 2. Hiệu ứng tháo nơ chuẩn xác video Sponsalia:
+              Khi chạm, nút nơ mở bung và 2 dải lụa bạc mềm mại rũ xuống, rơi trượt theo trọng lực về 2 góc dưới */}
+          {isUntying && (
+            <>
+              {/* Dải nơ bên trái: rũ xuống và lượn sang góc dưới trái */}
+              <motion.div
+                initial={{ x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+                animate={{
+                  x: [0, -3, -12, -24, -36],
+                  y: [0, 16, 65, 145, 235],
+                  rotate: [0, -4, -12, -20, -28],
+                  scaleX: [1, 0.98, 0.94, 0.88, 0.8],
+                  scaleY: [1, 1.05, 1.12, 1.06, 0.92],
+                  opacity: [1, 1, 0.95, 0.75, 0],
+                }}
+                transition={{
+                  duration: 1.05,
+                  times: [0, 0.18, 0.42, 0.72, 1],
+                  ease: [0.35, 0, 0.25, 1],
+                }}
+                style={{ transformOrigin: '100% 38%' }}
+                className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
+              >
+                <img
+                  src={decorUrl('style9-silver-bow.png')}
+                  alt=""
+                  className="w-full [clip-path:inset(0_50%_0_0)] drop-shadow-[0_6px_14px_rgba(20,30,50,0.15)]"
+                />
+              </motion.div>
 
-          <motion.div
-            animate={
-              isUntying
-                ? {
-                    x: [0, 0, 0, 2, 10, 27],
-                    y: [0, 3, 10, 36, 172, 390],
-                    scaleX: [1, 1.01, 1, 0.98, 0.83, 0.68],
-                    scaleY: [1, 1.03, 1.08, 1.17, 1.03, 0.84],
-                    rotate: [0, 0, 0, 4, 26, 50],
-                    opacity: [0, 0, 0, 0, 1, 0.76, 0],
-                  }
-                : { x: 0, y: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 0 }
-            }
-            transition={{
-              duration: 2.6,
-              times: [0, 0.18, 0.43, 0.56, 0.76, 1],
-              ease: [0.42, 0, 0.58, 1],
-              opacity: {
-                duration: 2.6,
-                times: [0, 0.18, 0.43, 0.52, 0.58, 0.76, 1],
-                ease: [0.42, 0, 0.58, 1],
-              },
-            }}
-            style={{ transformOrigin: '50% 36%' }}
-            className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-50"
-          >
-            <img
-              src={decorUrl('style9-silver-bow.png')}
-              alt=""
-              className="w-full [clip-path:inset(0_0_0_50%)]"
-            />
-          </motion.div>
+              {/* Dải nơ bên phải: rũ xuống và lượn sang góc dưới phải */}
+              <motion.div
+                initial={{ x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+                animate={{
+                  x: [0, 3, 12, 24, 36],
+                  y: [0, 18, 68, 148, 240],
+                  rotate: [0, 4, 12, 20, 28],
+                  scaleX: [1, 0.98, 0.94, 0.88, 0.8],
+                  scaleY: [1, 1.05, 1.12, 1.06, 0.92],
+                  opacity: [1, 1, 0.95, 0.75, 0],
+                }}
+                transition={{
+                  duration: 1.05,
+                  times: [0, 0.18, 0.42, 0.72, 1],
+                  ease: [0.35, 0, 0.25, 1],
+                }}
+                style={{ transformOrigin: '0% 38%' }}
+                className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
+              >
+                <img
+                  src={decorUrl('style9-silver-bow.png')}
+                  alt=""
+                  className="w-full [clip-path:inset(0_0_0_50%)] drop-shadow-[0_6px_14px_rgba(20,30,50,0.15)]"
+                />
+              </motion.div>
+            </>
+          )}
 
           {/* Chữ gợi ý chạm siêu mảnh ở đáy phong bì */}
           <motion.p

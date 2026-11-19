@@ -157,6 +157,41 @@ export default defineConfig(({ command }) => ({
             'property="og:image:height" content="957"'
           )
 
+        // Thumbnail riêng biệt cho Style 9 (Porcelain Blue - Váy cưới trắng bồng bềnh studio sang trọng)
+        const style9OgImage = process.env.VERCEL
+          ? 'https://mau-thiep-cuoi.vercel.app/images/duc-hau/DSC_8731.jpg?v=style9-porcelain'
+          : 'https://duclh3.github.io/thiep-cuoi-tinh-te/images/duc-hau/DSC_8731.jpg?v=style9-porcelain'
+
+        const style9Html = baseHtml
+          .replaceAll(
+            'THƯ MỜI CƯỚI THÀNH LONG &amp; THANH HUYỀN',
+            'THƯ MỜI CƯỚI HUY ĐỨC &amp; PHAN HẬU'
+          )
+          .replaceAll(
+            'Thiệp Mời Cưới Thành Long &amp; Thanh Huyền',
+            'Thiệp Mời Cưới Huy Đức &amp; Phan Hậu'
+          )
+          .replaceAll(
+            'Thư mời cưới Thành Long &amp; Thanh Huyền — 28.11.2026',
+            'Thư mời cưới Huy Đức &amp; Phan Hậu — 03.03.2027'
+          )
+          .replaceAll(
+            'Chúng mình sắp về chung một nhà! Sự hiện diện của bạn là niềm vinh dự lớn đối với gia đình và tụi mình...',
+            'Trân trọng kính mời bạn đến dự lễ thành hôn của Huy Đức &amp; Phan Hậu — 03.03.2027. Phong cách Hoa Xanh Sứ Trắng & Nơ Lụa Bạc.'
+          )
+          .replaceAll(
+            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/og-thumbnail.jpg',
+            style9OgImage
+          )
+          .replace(
+            'property="og:image:width" content="1200"',
+            'property="og:image:width" content="1600"'
+          )
+          .replace(
+            'property="og:image:height" content="630"',
+            'property="og:image:height" content="1064"'
+          )
+
         for (const routeDir of ['hai-dang-anh-dao', 'dang-dao']) {
           const targetDir = path.join(distDir, routeDir)
           fs.mkdirSync(targetDir, { recursive: true })
@@ -187,11 +222,13 @@ export default defineConfig(({ command }) => ({
           'calla-do',
           'lotus',
           'hoa-sen',
-          'porcelain',
-          'hoa-xanh',
           'style-6',
           'style-7',
           'style-8',
+        ]
+        const style9StyleRoutes = [
+          'porcelain',
+          'hoa-xanh',
           'style-9',
         ]
 
@@ -205,6 +242,12 @@ export default defineConfig(({ command }) => ({
           const targetDir = path.join(distDir, routeDir)
           fs.mkdirSync(targetDir, { recursive: true })
           fs.writeFileSync(path.join(targetDir, 'index.html'), ducHauHtml, 'utf-8')
+        }
+
+        for (const routeDir of style9StyleRoutes) {
+          const targetDir = path.join(distDir, routeDir)
+          fs.mkdirSync(targetDir, { recursive: true })
+          fs.writeFileSync(path.join(targetDir, 'index.html'), style9Html, 'utf-8')
         }
       },
     },
