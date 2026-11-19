@@ -361,15 +361,15 @@ const PorcelainTrifoldEnvelope: React.FC<{
     if (phase !== 'closed') return;
     soundEngine.playOpenChime();
     setPhase('untying');
-    // Nhịp 1: Nơ tháo và 2 dải lụa rũ rơi xuống hai bên (1.1s)
-    schedulePhase(() => setPhase('doors'), 1100);
-    // Nhịp 2: Cánh cửa phong bì mở bung 3D sang hai bên (1.3s)
-    schedulePhase(() => setPhase('flaps'), 2400);
+    // Nhịp 1: Nơ lụa bạc mở bung và trượt rơi mượt mà sang 2 góc dưới (0.65s)
+    schedulePhase(() => setPhase('doors'), 650);
+    // Nhịp 2: Cánh cửa phong bì mở bung 3D sang hai bên (1.05s)
+    schedulePhase(() => setPhase('flaps'), 1700);
     // Nhịp 3: Nắp trên dưới mở và thiệp hoa sứ xanh phóng to toàn màn hình
-    schedulePhase(() => setPhase('zooming'), 3150);
+    schedulePhase(() => setPhase('zooming'), 2350);
     // Nhịp 4: Chữ thư mời trang trọng hiện lên
-    schedulePhase(() => setPhase('revealing'), 4000);
-    schedulePhase(() => onComplete(), 4700);
+    schedulePhase(() => setPhase('revealing'), 3050);
+    schedulePhase(() => onComplete(), 3650);
   };
 
   const phaseOrder = ['closed', 'untying', 'doors', 'flaps', 'zooming', 'revealing'] as const;
@@ -526,74 +526,76 @@ const PorcelainTrifoldEnvelope: React.FC<{
             </p>
           </motion.div>
 
-          {/* 1. Nơ nguyên vẹn ở trạng thái đóng (biến mất ngay khi người dùng chạm mở) */}
-          {!isUntying && (
-            <div className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]">
+          {/* Cụm nơ lụa bạc — Đơn lớp GPU Composited 120Hz mượt mà tuyệt đối, tách 2 nửa trượt rơi tự nhiên theo trọng lực y hệt video Sponsalia */}
+          <div className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51] h-[150px]">
+            {/* Nửa nơ bên trái: Tháo bung và trượt rơi sang góc dưới trái */}
+            <motion.div
+              initial={false}
+              animate={
+                isUntying
+                  ? {
+                      x: -32,
+                      y: 300,
+                      rotate: -18,
+                      scaleY: 1.05,
+                      opacity: 0,
+                    }
+                  : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
+              }
+              transition={{
+                duration: 0.65,
+                ease: [0.32, 0, 0.45, 1],
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '51.11%',
+                transformOrigin: '95% 35%',
+                willChange: 'transform, opacity',
+              }}
+            >
               <img
-                src={decorUrl('style9-silver-bow.png')}
-                alt="Nơ lụa bạc"
+                src={decorUrl('style9-silver-bow-left.png')}
+                alt="Nơ lụa bạc trái"
                 className="w-full drop-shadow-[0_8px_18px_rgba(20,30,50,0.18)]"
               />
-            </div>
-          )}
+            </motion.div>
 
-          {/* 2. Hiệu ứng tháo nơ chuẩn xác video Sponsalia:
-              Khi chạm, nút nơ mở bung và 2 dải lụa bạc mềm mại rũ xuống, rơi trượt theo trọng lực về 2 góc dưới */}
-          {isUntying && (
-            <>
-              {/* Dải nơ bên trái: rũ xuống và lượn sang góc dưới trái */}
-              <motion.div
-                initial={{ x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
-                animate={{
-                  x: [0, -3, -12, -24, -36],
-                  y: [0, 16, 65, 145, 235],
-                  rotate: [0, -4, -12, -20, -28],
-                  scaleX: [1, 0.98, 0.94, 0.88, 0.8],
-                  scaleY: [1, 1.05, 1.12, 1.06, 0.92],
-                  opacity: [1, 1, 0.95, 0.75, 0],
-                }}
-                transition={{
-                  duration: 1.05,
-                  times: [0, 0.18, 0.42, 0.72, 1],
-                  ease: [0.35, 0, 0.25, 1],
-                }}
-                style={{ transformOrigin: '100% 38%' }}
-                className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
-              >
-                <img
-                  src={decorUrl('style9-silver-bow.png')}
-                  alt=""
-                  className="w-full [clip-path:inset(0_50%_0_0)] drop-shadow-[0_6px_14px_rgba(20,30,50,0.15)]"
-                />
-              </motion.div>
-
-              {/* Dải nơ bên phải: rũ xuống và lượn sang góc dưới phải */}
-              <motion.div
-                initial={{ x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
-                animate={{
-                  x: [0, 3, 12, 24, 36],
-                  y: [0, 18, 68, 148, 240],
-                  rotate: [0, 4, 12, 20, 28],
-                  scaleX: [1, 0.98, 0.94, 0.88, 0.8],
-                  scaleY: [1, 1.05, 1.12, 1.06, 0.92],
-                  opacity: [1, 1, 0.95, 0.75, 0],
-                }}
-                transition={{
-                  duration: 1.05,
-                  times: [0, 0.18, 0.42, 0.72, 1],
-                  ease: [0.35, 0, 0.25, 1],
-                }}
-                style={{ transformOrigin: '0% 38%' }}
-                className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51]"
-              >
-                <img
-                  src={decorUrl('style9-silver-bow.png')}
-                  alt=""
-                  className="w-full [clip-path:inset(0_0_0_50%)] drop-shadow-[0_6px_14px_rgba(20,30,50,0.15)]"
-                />
-              </motion.div>
-            </>
-          )}
+            {/* Nửa nơ bên phải: Tháo bung và trượt rơi sang góc dưới phải */}
+            <motion.div
+              initial={false}
+              animate={
+                isUntying
+                  ? {
+                      x: 32,
+                      y: 300,
+                      rotate: 18,
+                      scaleY: 1.05,
+                      opacity: 0,
+                    }
+                  : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
+              }
+              transition={{
+                duration: 0.65,
+                ease: [0.32, 0, 0.45, 1],
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '51.11%',
+                transformOrigin: '5% 35%',
+                willChange: 'transform, opacity',
+              }}
+            >
+              <img
+                src={decorUrl('style9-silver-bow-right.png')}
+                alt="Nơ lụa bạc phải"
+                className="w-full drop-shadow-[0_8px_18px_rgba(20,30,50,0.18)]"
+              />
+            </motion.div>
+          </div>
 
           {/* Chữ gợi ý chạm siêu mảnh ở đáy phong bì */}
           <motion.p
@@ -670,6 +672,8 @@ export const PorcelainBlueInvitation: React.FC<PorcelainBlueInvitationProps> = (
   useEffect(() => {
     const urls = [
       decorUrl('style9-silver-bow.png'),
+      decorUrl('style9-silver-bow-left.png'),
+      decorUrl('style9-silver-bow-right.png'),
       decorUrl('style9-porcelain-hero-frame.jpg'),
       decorUrl('style9-champagne-tower.jpg'),
       decorUrl('style9-corner-rose.jpg'),

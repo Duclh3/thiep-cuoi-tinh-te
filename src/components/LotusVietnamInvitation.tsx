@@ -263,59 +263,59 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
         {/* ============================================================
             PHẦN 1: BÌA MỞ ĐẦU HOA SEN (CHẬM RÃI, CÂN ĐỐI BỐ CỤC — CHỈ 1 KHÓM SEN NỐI KHUNG)
            ============================================================ */}
-        <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-visible px-6 pb-28 pt-14 text-center">
+        <section className="relative flex min-h-[100svh] flex-col items-center justify-between overflow-visible px-6 pt-14 pb-8 text-center">
           {/* Lớp loang màu nước hồng phấn góc trên phải & xanh ngọc góc dưới trái */}
           <div
-            className="pointer-events-none absolute -right-8 -top-6 h-72 w-72 rounded-full opacity-60 blur-2xl"
+            className="pointer-events-none absolute -right-6 -top-4 h-72 w-72 rounded-full opacity-65 blur-2xl"
             style={{
               background:
-                'radial-gradient(circle, rgba(238,186,202,0.72) 0%, rgba(246,245,240,0) 70%)',
+                'radial-gradient(circle, rgba(238,186,202,0.82) 0%, rgba(246,245,240,0) 70%)',
             }}
           />
           <div
-            className="pointer-events-none absolute bottom-10 -left-10 h-72 w-72 rounded-full opacity-55 blur-2xl"
+            className="pointer-events-none absolute bottom-6 -left-8 h-72 w-72 rounded-full opacity-55 blur-2xl"
             style={{
               background:
-                'radial-gradient(circle, rgba(168,202,174,0.62) 0%, rgba(246,245,240,0) 72%)',
+                'radial-gradient(circle, rgba(168,202,174,0.65) 0%, rgba(246,245,240,0) 72%)',
             }}
           />
 
-          {/* Lá sen màu nước đậm nét góc trên trái (xuất hiện từ từ 2.2s) */}
+          {/* Lá sen màu nước đậm nét góc trên trái (xuất hiện từ tốn 1.8s) */}
           <motion.img
             src={decorUrl('style8-lotus-top-leaf.jpg')}
             alt=""
-            initial={{ opacity: 0, x: -30, y: -30, rotate: -18 }}
+            initial={{ opacity: 0, x: -24, y: -24, rotate: -16 }}
             animate={{ opacity: 0.94, x: 0, y: 0, rotate: -8 }}
-            transition={{ duration: 2.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute -left-12 -top-14 w-56 select-none mix-blend-multiply"
+            transition={{ duration: 1.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-none absolute -left-10 -top-12 w-52 select-none mix-blend-multiply"
           />
 
           {/* Nhành lá sen mờ nhẹ góc trên phải cân bằng không gian trống (đối xứng chéo tinh tế) */}
           <motion.img
             src={decorUrl('style8-lotus-top-leaf.jpg')}
             alt=""
-            initial={{ opacity: 0, x: 24, y: -20 }}
-            animate={{ opacity: 0.24, x: 0, y: 0 }}
-            transition={{ duration: 2.5, delay: 0.45, ease: 'easeOut' }}
-            className="pointer-events-none absolute -right-20 top-10 w-44 -scale-x-100 rotate-[24deg] select-none mix-blend-multiply"
+            initial={{ opacity: 0, x: 20, y: -16 }}
+            animate={{ opacity: 0.28, x: 0, y: 0 }}
+            transition={{ duration: 2.0, delay: 0.4, ease: 'easeOut' }}
+            className="pointer-events-none absolute -right-16 top-8 w-40 -scale-x-100 rotate-[22deg] select-none mix-blend-multiply"
           />
 
           {/* Bóng lá sen thủy mặc dịu nhẹ ở góc dưới trái cân bằng với khóm hoa sen góc dưới phải */}
           <motion.img
             src={decorUrl('style8-lotus-top-leaf.jpg')}
             alt=""
-            initial={{ opacity: 0, x: -24, y: 24 }}
-            animate={{ opacity: 0.32, x: 0, y: 0 }}
-            transition={{ duration: 2.4, delay: 0.65, ease: 'easeOut' }}
-            className="pointer-events-none absolute -left-20 bottom-12 w-48 rotate-[35deg] select-none mix-blend-multiply"
+            initial={{ opacity: 0, x: -20, y: 20 }}
+            animate={{ opacity: 0.35, x: 0, y: 0 }}
+            transition={{ duration: 2.0, delay: 0.5, ease: 'easeOut' }}
+            className="pointer-events-none absolute -left-16 bottom-8 w-44 rotate-[32deg] select-none mix-blend-multiply"
           />
 
-          {/* Cụm chữ mở dần chậm rãi từ giữa ra 2 bên (2.6s) — bổ sung họa tiết nụ sen mảnh phía trên */}
+          {/* Cụm chữ thư mời — chuyển động mượt mà, định vị cân đối hài hòa giữa màn hình */}
           <motion.div
-            initial={{ opacity: 0, clipPath: 'inset(0% 50% 0% 50%)' }}
-            animate={{ opacity: 1, clipPath: 'inset(0% 0% 0% 0%)' }}
-            transition={{ duration: 2.6, delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 -mt-14 flex flex-col items-center"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 my-auto flex flex-col items-center"
           >
             {/* Họa tiết nụ sen & đường chỉ mảnh tinh tế phía trên tiêu đề */}
             <svg
@@ -339,33 +339,36 @@ export const LotusVietnamInvitation: React.FC<LotusVietnamInvitationProps> = ({
               />
             </svg>
 
-            <p className="font-serif-luxury text-[24px] tracking-[0.04em] text-[#2B322B]">
+            <p className="font-serif-luxury text-[23px] tracking-[0.05em] text-[#2B322B]">
               Thư Mời Cưới
             </p>
-            <h1 className="font-handwritten-minimal mt-3 whitespace-nowrap text-[31px] sm:text-[34px] leading-[1.3] text-[#3F483F] px-1">
+            <h1 className="font-handwritten-minimal mt-2.5 whitespace-nowrap text-[32px] sm:text-[35px] leading-[1.3] text-[#3F483F] px-1">
               {data.groom.shortName} &amp; {data.bride.shortName}
             </h1>
 
-            <div className="my-3.5 h-px w-16 bg-[#7A8C7A]/50" />
+            <div className="my-3 h-px w-16 bg-[#7A8C7A]/50" />
 
-            <div className="font-serif-luxury text-[54px] font-normal leading-[1.03] tracking-[0.05em] text-[#202720] [font-variant-numeric:lining-nums]">
+            <div className="font-serif-luxury text-[52px] font-normal leading-[1.04] tracking-[0.05em] text-[#202720] [font-variant-numeric:lining-nums]">
               <div>{dayMonthDot}</div>
               <div>{mainYear}</div>
             </div>
 
-            <p className="font-serif-italic mt-3 text-[13.5px] tracking-[0.06em] text-[#667366]">
+            <p className="font-serif-italic mt-3 text-[14px] tracking-[0.06em] text-[#556355]">
               Trân trọng kính mời
+            </p>
+            <p className="font-lotus-sans mt-0.5 text-[10.5px] uppercase tracking-[0.16em] text-[#7A8C7A]">
+              Tới dự lễ thành hôn
             </p>
           </motion.div>
 
-          {/* DUY NHẤT 1 KHÓM HOA SEN HỒNG LỚN Ở GÓC DƯỚI PHẢI — NỐI LIỀN MẠCH LÊN VAI PHẢI KHUNG VIỀN (KHÔNG LẶP!) */}
+          {/* DUY NHẤT 1 KHÓM HOA SEN HỒNG LỚN Ở GÓC DƯỚI PHẢI — VỊ TRÍ HÀI HÒA, KHÔNG TRỐNG TRẢI, NỐI MẠCH VÀO KHUNG */}
           <motion.img
             src={decorUrl('style8-lotus-cluster.jpg')}
             alt="Hoa sen Việt Nam"
-            initial={{ opacity: 0, y: 42, scale: 0.94 }}
+            initial={{ opacity: 0, y: 32, scale: 0.95 }}
             animate={{ opacity: 0.98, y: 0, scale: 1 }}
-            transition={{ duration: 2.35, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute -bottom-10 -right-2 z-20 w-[84%] max-w-[360px] select-none mix-blend-multiply"
+            transition={{ duration: 2.0, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-none absolute bottom-0 right-0 z-20 w-[88%] max-w-[380px] select-none mix-blend-multiply"
           />
         </section>
 
