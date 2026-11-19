@@ -127,10 +127,76 @@ export default defineConfig(({ command }) => ({
             ogImageUrl
           )
 
+        const ducHauHtml = baseHtml
+          .replaceAll(
+            'THƯ MỜI CƯỚI THÀNH LONG &amp; THANH HUYỀN',
+            'THƯ MỜI CƯỚI HUY ĐỨC &amp; PHAN HẬU'
+          )
+          .replaceAll(
+            'Thiệp Mời Cưới Thành Long &amp; Thanh Huyền',
+            'Thiệp Mời Cưới Huy Đức &amp; Phan Hậu'
+          )
+          .replaceAll(
+            'Thư mời cưới Thành Long &amp; Thanh Huyền — 28.11.2026',
+            'Thư mời cưới Huy Đức &amp; Phan Hậu — 03.03.2027'
+          )
+          .replaceAll(
+            'Chúng mình sắp về chung một nhà! Sự hiện diện của bạn là niềm vinh dự lớn đối với gia đình và tụi mình...',
+            'Trân trọng kính mời bạn đến dự lễ thành hôn của Huy Đức &amp; Phan Hậu — 03.03.2027.'
+          )
+          .replaceAll(
+            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/og-thumbnail.jpg',
+            'https://duclh3.github.io/thiep-cuoi-tinh-te/images/duc-hau/couple-hero.jpg'
+          )
+
         for (const routeDir of ['hai-dang-anh-dao', 'dang-dao']) {
           const targetDir = path.join(distDir, routeDir)
           fs.mkdirSync(targetDir, { recursive: true })
           fs.writeFileSync(path.join(targetDir, 'index.html'), dangDaoHtml, 'utf-8')
+        }
+
+        // GitHub Pages không có SPA fallback. Xuất index.html cho mọi đường dẫn
+        // đã được App nhận diện để link trực tiếp /hoa-sen, /hoa-xanh... không 404.
+        const defaultStyleRoutes = [
+          'fine-art',
+          'vogue',
+          'editorial',
+          'starlight',
+          'cinematic',
+          'indochine',
+          'minimal',
+          'tone-trang',
+          'style-1',
+          'style-2',
+          'style-3',
+          'style-4',
+          'style-5',
+        ]
+        const ducHauStyleRoutes = [
+          'garden',
+          'khu-vuon',
+          'calla',
+          'calla-do',
+          'lotus',
+          'hoa-sen',
+          'porcelain',
+          'hoa-xanh',
+          'style-6',
+          'style-7',
+          'style-8',
+          'style-9',
+        ]
+
+        for (const routeDir of defaultStyleRoutes) {
+          const targetDir = path.join(distDir, routeDir)
+          fs.mkdirSync(targetDir, { recursive: true })
+          fs.writeFileSync(path.join(targetDir, 'index.html'), baseHtml, 'utf-8')
+        }
+
+        for (const routeDir of ducHauStyleRoutes) {
+          const targetDir = path.join(distDir, routeDir)
+          fs.mkdirSync(targetDir, { recursive: true })
+          fs.writeFileSync(path.join(targetDir, 'index.html'), ducHauHtml, 'utf-8')
         }
       },
     },
