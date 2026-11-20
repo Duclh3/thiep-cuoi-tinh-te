@@ -618,6 +618,8 @@ const PorcelainTrifoldEnvelope: React.FC<{
                   src={decorUrl('style9-silver-bow-left.png')}
                   alt="Nơ lụa bạc trái"
                   draggable={false}
+                  decoding="sync"
+                  fetchPriority="high"
                   className="w-full select-none"
                 />
               </motion.div>
@@ -651,6 +653,8 @@ const PorcelainTrifoldEnvelope: React.FC<{
                   src={decorUrl('style9-silver-bow-right.png')}
                   alt=""
                   draggable={false}
+                  decoding="sync"
+                  fetchPriority="high"
                   className="w-full select-none"
                 />
               </motion.div>
