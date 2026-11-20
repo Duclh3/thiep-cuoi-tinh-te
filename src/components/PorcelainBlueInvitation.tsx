@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import {
+  animate as animateMotion,
+  motion,
+  AnimatePresence,
+  useInView,
+  useMotionValue,
+  useTransform,
+} from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
   Check,
@@ -30,6 +37,12 @@ interface PorcelainBlueInvitationProps {
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 const decorUrl = (file: string) => `${BASE_URL}images/decor/${file}`;
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+const smoothstep = (start: number, end: number, value: number) => {
+  const t = clamp01((value - start) / (end - start));
+  return t * t * (3 - 2 * t);
+};
 
 function getInitialGuestName(propName?: string): string {
   if (typeof window !== 'undefined') {
@@ -345,10 +358,52 @@ const PorcelainTrifoldEnvelope: React.FC<{
     'closed' | 'untying' | 'doors' | 'flaps' | 'zooming' | 'revealing'
   >('closed');
   const animationTimersRef = useRef<number[]>([]);
+  const hasStartedRef = useRef(false);
+  const bowAnimationRef = useRef<{ stop: () => void } | null>(null);
+  const bowProgress = useMotionValue(0);
+
+  // Nơ dùng một đồng hồ duy nhất 0→1. Các công thức liên tục bên dưới
+  // mô phỏng đúng nhịp video: giữ nút nơ, rũ tâm xuống, sau đó mới tách
+  // hai nửa và tăng tốc theo trọng lực. Không còn easing khởi động lại
+  // ở từng keyframe nên vận tốc không bị rơi về 0 giữa chừng.
+  // Pha 1: dải lụa còn neo ở mép ngoài phong bì, nút nơ rũ xuống.
+  const bowLeftDroopRotate = useTransform(bowProgress, (progress) => {
+    return 20 * smoothstep(0.12, 0.75, progress);
+  });
+  const bowRightDroopRotate = useTransform(bowProgress, (progress) => {
+    return -20 * smoothstep(0.12, 0.75, progress);
+  });
+  const bowDroopScaleX = useTransform(bowProgress, (progress) => {
+    const angle = 20 * smoothstep(0.12, 0.75, progress);
+    return 1 / Math.cos((angle * Math.PI) / 180);
+  });
+
+  // Pha 2: sau khi nút nơ đã rũ, hai nửa mới nhả neo và rơi theo trọng lực.
+  const bowLeftReleaseX = useTransform(bowProgress, (progress) => {
+    return -28 * smoothstep(0.55, 1, progress);
+  });
+  const bowRightReleaseX = useTransform(bowProgress, (progress) => {
+    return 28 * smoothstep(0.55, 1, progress);
+  });
+  const bowLeftReleaseY = useTransform(bowProgress, (progress) => {
+    const fall = clamp01((progress - 0.45) / 0.55);
+    return 430 * fall * fall;
+  });
+  const bowRightReleaseY = useTransform(bowProgress, (progress) => {
+    const fall = clamp01((progress - 0.45) / 0.55);
+    return 440 * fall * fall;
+  });
+  const bowReleaseScaleY = useTransform(bowProgress, (progress) => {
+    return 1 + 0.04 * smoothstep(0.45, 0.9, progress);
+  });
+  const bowOpacity = useTransform(bowProgress, (progress) => {
+    return 1 - smoothstep(0.94, 1, progress);
+  });
 
   useEffect(
     () => () => {
       animationTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      bowAnimationRef.current?.stop();
     },
     []
   );
@@ -358,18 +413,24 @@ const PorcelainTrifoldEnvelope: React.FC<{
   };
 
   const handleOpen = () => {
-    if (phase !== 'closed') return;
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
     soundEngine.playOpenChime();
+    bowAnimationRef.current?.stop();
+    bowProgress.set(0);
+    bowAnimationRef.current = animateMotion(bowProgress, 1, {
+      duration: 2.08,
+      ease: 'linear',
+    });
     setPhase('untying');
-    // Nhịp 1: Nơ lụa bạc mở bung và trượt rơi mượt mà sang 2 góc dưới (0.72s)
-    schedulePhase(() => setPhase('doors'), 720);
-    // Nhịp 2: Cánh cửa phong bì mở bung 3D sang hai bên (1.05s)
-    schedulePhase(() => setPhase('flaps'), 1800);
-    // Nhịp 3: Nắp trên dưới mở và thiệp hoa sứ xanh phóng to toàn màn hình
-    schedulePhase(() => setPhase('zooming'), 2450);
-    // Nhịp 4: Chữ thư mời trang trọng hiện lên
-    schedulePhase(() => setPhase('revealing'), 3150);
-    schedulePhase(() => onComplete(), 3750);
+    // Nơ rơi hẳn và nghỉ đúng nhịp video rồi mới trao lại cho
+    // chuỗi mở cửa/nắp/zoom hiện có. Các khoảng sau đó giữ nguyên
+    // timing của bản mới nhất mà người dùng đã hoàn thiện.
+    schedulePhase(() => setPhase('doors'), 2750);
+    schedulePhase(() => setPhase('flaps'), 3830);
+    schedulePhase(() => setPhase('zooming'), 4480);
+    schedulePhase(() => setPhase('revealing'), 5180);
+    schedulePhase(() => onComplete(), 5780);
   };
 
   const phaseOrder = ['closed', 'untying', 'doors', 'flaps', 'zooming', 'revealing'] as const;
@@ -526,76 +587,73 @@ const PorcelainTrifoldEnvelope: React.FC<{
             </p>
           </motion.div>
 
-          {/* Cụm nơ lụa bạc — Đơn lớp GPU Composited 120Hz mượt mà tuyệt đối, tách 2 nửa trượt rơi tự nhiên theo trọng lực y hệt video Sponsalia */}
+          {/* Cụm nơ lụa bạc: hai nửa ghép sẵn, dùng chung một MotionValue
+              để không cross-fade, không reset vận tốc và không raster lại shadow. */}
           <div className="pointer-events-none absolute inset-x-[-2%] top-[38%] z-[51] h-[150px]">
-            {/* Nửa nơ bên trái: Tháo bung và trượt rơi sang góc dưới trái */}
             <motion.div
               initial={false}
-              animate={
-                isUntying
-                  ? {
-                      x: [0, -8, -20, -32],
-                      y: [0, 45, 170, 320],
-                      rotate: [0, -5, -12, -20],
-                      scaleY: [1, 1.02, 1.05, 1.06],
-                      opacity: [1, 1, 0.9, 0],
-                    }
-                  : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
-              }
-              transition={{
-                duration: 0.72,
-                times: [0, 0.25, 0.65, 1],
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
               style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '51.11%',
-                transformOrigin: '95% 35%',
+                x: bowLeftReleaseX,
+                y: bowLeftReleaseY,
+                scaleY: bowReleaseScaleY,
+                opacity: bowOpacity,
                 willChange: 'transform, opacity',
               }}
+              className="transform-gpu [backface-visibility:hidden]"
             >
-              <img
-                src={decorUrl('style9-silver-bow-left.png')}
-                alt="Nơ lụa bạc trái"
-                className="w-full drop-shadow-[0_8px_18px_rgba(20,30,50,0.18)]"
-              />
+              <motion.div
+                style={{
+                  transformOrigin: '0% 35%',
+                  rotate: bowLeftDroopRotate,
+                  scaleX: bowDroopScaleX,
+                  willChange: 'transform',
+                }}
+                className="transform-gpu [backface-visibility:hidden]"
+              >
+                <img
+                  src={decorUrl('style9-silver-bow-left.png')}
+                  alt="Nơ lụa bạc trái"
+                  draggable={false}
+                  className="w-full select-none"
+                />
+              </motion.div>
             </motion.div>
 
-            {/* Nửa nơ bên phải: Tháo bung và trượt rơi sang góc dưới phải */}
             <motion.div
               initial={false}
-              animate={
-                isUntying
-                  ? {
-                      x: [0, 8, 20, 32],
-                      y: [0, 45, 170, 320],
-                      rotate: [0, 5, 12, 20],
-                      scaleY: [1, 1.02, 1.05, 1.06],
-                      opacity: [1, 1, 0.9, 0],
-                    }
-                  : { x: 0, y: 0, rotate: 0, scaleY: 1, opacity: 1 }
-              }
-              transition={{
-                duration: 0.72,
-                times: [0, 0.25, 0.65, 1],
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
               style={{
                 position: 'absolute',
                 top: 0,
                 right: 0,
                 width: '51.11%',
-                transformOrigin: '5% 35%',
+                x: bowRightReleaseX,
+                y: bowRightReleaseY,
+                scaleY: bowReleaseScaleY,
+                opacity: bowOpacity,
                 willChange: 'transform, opacity',
               }}
+              className="transform-gpu [backface-visibility:hidden]"
             >
-              <img
-                src={decorUrl('style9-silver-bow-right.png')}
-                alt="Nơ lụa bạc phải"
-                className="w-full drop-shadow-[0_8px_18px_rgba(20,30,50,0.18)]"
-              />
+              <motion.div
+                style={{
+                  transformOrigin: '100% 35%',
+                  rotate: bowRightDroopRotate,
+                  scaleX: bowDroopScaleX,
+                  willChange: 'transform',
+                }}
+                className="transform-gpu [backface-visibility:hidden]"
+              >
+                <img
+                  src={decorUrl('style9-silver-bow-right.png')}
+                  alt=""
+                  draggable={false}
+                  className="w-full select-none"
+                />
+              </motion.div>
             </motion.div>
           </div>
 
